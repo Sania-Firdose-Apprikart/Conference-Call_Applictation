@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
 import App from "./App";
-import * as serviceWorkerRegistration from './serviceWorkerRegistration';
+import * as serviceWorkerRegistration from "./serviceWorkerRegistration";
 import reportWebVitals from "./reportWebVitals";
 import { BrowserRouter } from "react-router-dom";
 import { getRootAttribute } from "utils";
@@ -23,17 +23,35 @@ if (!roomName) {
 
 console.log("Dynamic roomName:", roomName);
 
-console.log("roomName from index.js: ", roomName)
+console.log("roomName from index.js: ", roomName);
+window.addEventListener("error", function (event) {
+  if (
+    event?.message?.includes("ChunkLoadError") ||
+    event?.message?.includes("Loading chunk")
+  ) {
+    console.warn("Chunk error caught. Reloading app...");
+    window.location.reload();
+  }
+});
 
-//React.StricMode causes double rendering of components in "development" to detect the problems with the code - mekya 
+//added by me
+window.addEventListener("unhandledrejection", (event) => {
+  const message = event.reason?.message || "";
+  if (message.includes("ChunkLoadError") || message.includes("Loading chunk")) {
+    console.warn("Unhandled rejection from chunk load. Reloading...");
+    window.location.reload();
+  }
+});
+
+//React.StricMode causes double rendering of components in "development" to detect the problems with the code - mekya
 root.render(
   <WebSocketProvider>
     <React.StrictMode>
-      <BrowserRouter >
-          <App />
+      <BrowserRouter>
+        <App />
       </BrowserRouter>
     </React.StrictMode>
-  </WebSocketProvider> 
+  </WebSocketProvider>
 );
 
 // If you want your app to work offline and load faster, you can change
