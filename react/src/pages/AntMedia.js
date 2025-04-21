@@ -28,6 +28,7 @@ import leaveRoomSound from "static/sounds/leave-sound.mp3";
 import PublisherRequestListDrawer from "../Components/PublisherRequestListDrawer";
 import { WebinarRoles } from "../WebinarRoles";
 import Stack from "@mui/material/Stack";
+import { Joining } from "./Joining";
 
 // UnitTestContext is used to pass the globals object to the unit tests
 // don't use it in the production code
@@ -341,7 +342,7 @@ function AntMedia(props) {
     : params.id;
   console.log("initialRoomName: ", initialRoomName);
   console.log("initialParams: ", params);
-
+const[isAuthenticated,setIsAuthenticated]=React.useState(sessionStorage.getItem("isAuthenticated")|| false)
   const [roomName, setRoomName] = useState(initialRoomName);
 
   const [role, setRole] = useState(roleInit);
@@ -3618,6 +3619,7 @@ function AntMedia(props) {
     }
   }
 
+
   const updateTalkers = (notificationEvent) => {
     const newTalkers = notificationEvent.payload
       .filter((p) => p.trackId !== "" && p.audioLevel < 60)
@@ -4572,7 +4574,7 @@ function AntMedia(props) {
         </Grid>
       </Grid>
     </>
-  ) : (
+  ) : isAuthenticated ? (
     <Grid container className="App">
       <Grid
         container
@@ -5101,6 +5103,8 @@ function AntMedia(props) {
         </UnitTestContext.Provider>
       </Grid>
     </Grid>
+  ) : (
+    <Joining setIsAuthenticated = {(state) => setIsAuthenticated(state)}/>
   );
 }
 

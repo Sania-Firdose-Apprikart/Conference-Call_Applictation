@@ -22,7 +22,7 @@ import { useParams } from "react-router-dom";
 import { isComponentMode, getRootAttribute } from "../utils";
 import { useNavigate } from "react-router-dom";
 
-export const Joining = () => {
+export const Joining = ({ setIsAuthenticated }) => {
   const [passcode, setPasscode] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -122,7 +122,8 @@ export const Joining = () => {
         console.log("Authentication successful");
 
         // Navigate to WaitingRoom if authentication is successful
-        navigate(`/meet/${id}`);
+        // navigate(`/meet/${id}`);
+        setIsAuthenticated(true)
       } else {
         setError("Authentication failed");
         console.log("Authentication failed", data);

@@ -31,7 +31,7 @@ function CustomRoutes(props) {
           {/* <Route path="/join/:id" element={<Joining />} /> */}
           <Route path="meet/:id" element={<AntMedia />} />
           {/* <Route path="/" element={<Home />} /> */}
-          <Route path="/:id" element={<Joining />} />
+          <Route path="/:id" element={<AntMedia />} />
         </Routes>
       </Grid>
     );
