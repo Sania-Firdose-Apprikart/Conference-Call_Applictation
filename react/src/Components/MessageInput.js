@@ -86,7 +86,7 @@ const MessageInput = React.memo(
         // sendMessage(fileEndPoint);
         const data = await response.json(); // Parse JSON response
         const endpoint = "https://kia.apprikart.com" + data.file;
-        setFileEndPoint(endpoint);
+        setFileEndPoint(endpoint)
         // Adjust based on actual response structure
         if (typeof endpoint !== "string") {
           console.error("Invalid file endpoint:", endpoint);
@@ -95,7 +95,8 @@ const MessageInput = React.memo(
         // sendMessage(endpoint);
       } catch (error) {
         console.error("🚨 Upload failed:", error);
-      } finally {
+      }
+      finally {
         setIsLoading(false); // Stop loading
       }
     };
@@ -195,7 +196,7 @@ const MessageInput = React.memo(
 
         handleSendMessage(messageData.message);
         handleSetMessages(messageData);
-        setFileEndPoint("");
+        setFileEndPoint("")
         setShowEmojiPicker(false);
         setText("");
         setFiles([]);
@@ -259,7 +260,10 @@ const MessageInput = React.memo(
                   />
                   <IconButton onClick={() => inputRef.current.click()}>
                     {isLoading ? (
-                      <CircularProgress size={24} sx={{ color: "#000" }} />
+                      <CircularProgress
+                      size={24}
+                        sx={{ color: "#000" }}
+                      />
                     ) : (
                       <AttachFileIcon
                         sx={{ color: "#000", cursor: "pointer" }}

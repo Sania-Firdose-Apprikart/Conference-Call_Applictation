@@ -120,30 +120,12 @@ function MessageCard(props) {
             lineHeight={1.4}
             id="message"
           >
-            {/* {urlify(props?.message)} */}
-            {/* {props?.message} */}
             {typeof props?.message === "string"
               ? urlify(props.message)
               : props?.message instanceof File || props?.message instanceof Blob
               ? "[File]"
               : "[Invalid message content]"}
           </HyperTypography>
-          //   <HyperTypography
-          //     variant="body1"
-          //     fontSize={14}
-          //     style={{ whiteSpace: "pre-wrap", overflowWrap: "break-word" }}
-          //     color={theme.palette.chatText}
-          //     align={props?.isMe ? "right" : "left"}
-          //     fontWeight={400}
-          //     lineHeight={1.4}
-          //     id="message"
-          //   >
-          //     {typeof props?.message === "string"
-          //       ? urlify(props.message)
-          //       : props?.message instanceof File || props?.message instanceof Blob
-          //       ? "[File]"
-          //       : "[Invalid message content]"}
-          //   </HyperTypography>
         )}
       </Grid>
     </Grid>

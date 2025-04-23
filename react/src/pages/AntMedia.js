@@ -2834,36 +2834,6 @@ function AntMedia(props) {
     });
   }
 
-  // function handleSendMessage(message) {
-  //   if (publishStreamId || isPlayOnly) {
-  //     let streamId = isPlayOnly ? roomName : publishStreamId;
-  //     let iceState = webRTCAdaptor?.iceConnectionState(streamId);
-  //     if (
-  //       iceState !== null &&
-  //       iceState !== "failed" &&
-  //       iceState !== "disconnected"
-  //     ) {
-  //       if (message === "debugme") {
-  //         webRTCAdaptor?.getDebugInfo(streamId);
-  //         return;
-  //       } else if (message === "clearme") {
-  //         setMessages([]);
-  //         return;
-  //       }
-
-  //       webRTCAdaptor?.sendData(
-  //         streamId,
-  //         JSON.stringify({
-  //           eventType: "MESSAGE_RECEIVED",
-  //           message: message,
-  //           name: streamName,
-  //           senderId: streamId,
-  //           date: new Date().toString(),
-  //         })
-  //       );
-  //     }
-  //   }
-  // }
   function handleSendMessage(message) {
     if (publishStreamId || isPlayOnly) {
       let streamId = isPlayOnly ? roomName : publishStreamId;
