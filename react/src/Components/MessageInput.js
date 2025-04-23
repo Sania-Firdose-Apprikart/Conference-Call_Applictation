@@ -172,37 +172,36 @@ const MessageInput = React.memo(
     //     if (inputRef.current) inputRef.current.value = "";
     //   }
     // };
-    const sendMessage = (fileURL = null) => {
-      if (text || fileEndPoint || fileEndPoint.length > 0) {
-        const message = fileEndPoint || text;
-        // Ensure message is a string
-        if (typeof message !== "string") {
-          console.error("Invalid message type:", message);
-          return;
-        }
+  const sendMessage = (fileURL = null) => {
+  if (text || fileEndPoint) {
+    const isFile = Boolean(fileEndPoint);
 
-        const messageData = {
-          name: "You",
-          message,
-          date: new Date().toLocaleString(),
-          type: fileURL ? "file_message" : "text_message",
-        };
-
-        if (fileURL) {
-          messageData.fileName = files[0]?.name;
-          messageData.fileSize = files[0]?.size;
-          messageData.fileType = files[0]?.type;
-        }
-
-        handleSendMessage(messageData.message);
-        handleSetMessages(messageData);
-        setFileEndPoint("")
-        setShowEmojiPicker(false);
-        setText("");
-        setFiles([]);
-        if (inputRef.current) inputRef.current.value = "";
-      }
+    const messageData = {
+      name: "You",
+      date: new Date().toLocaleString(),
+      message: isFile ? "" : text,
+      eventType: isFile ? "FILE_RECEIVED" : "TEXT_MESSAGE",
     };
+
+    if (isFile && files[0]) {
+      messageData.fileContent = ""; // Since you're linking externally, no need to include base64
+      messageData.fileName = files[0].name;
+      messageData.fileSize = files[0].size;
+      messageData.fileType = files[0].type;
+      messageData.fileUrl = fileEndPoint; // include this if you're using external URLs
+    }
+
+    handleSendMessage(isFile ? fileEndPoint : text); // This is what goes to WebSocket
+    handleSetMessages(messageData); // This is what updates UI
+
+    setFileEndPoint("");
+    setShowEmojiPicker(false);
+    setText("");
+    setFiles([]);
+    if (inputRef.current) inputRef.current.value = "";
+  }
+};
+
 
     // const addEmojiIntoTextBox = (emojiData, event) => {
     //   setText(text + " " + emojiData.emoji);
