@@ -85,6 +85,7 @@ return (
 
             {/*props.isPlayOnly === false &&*/ value === 0 ?
             <MessageInput
+                streamName={props?.streamName}
                 handleSendMessage={(message) => props?.sendMessage(message)}
                 handleSetMessages={(messages) => props?.handleSetMessages(messages)}
                 handleFileUpload={(file) => props?.uploadFile(file)}

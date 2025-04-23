@@ -342,7 +342,7 @@ function AntMedia(props) {
     : params.id;
   console.log("initialRoomName: ", initialRoomName);
   console.log("initialParams: ", params);
-const[isAuthenticated,setIsAuthenticated]=React.useState(sessionStorage.getItem("isAuthenticated")|| false)
+
   const [roomName, setRoomName] = useState(initialRoomName);
 
   const [role, setRole] = useState(roleInit);
@@ -386,6 +386,10 @@ const[isAuthenticated,setIsAuthenticated]=React.useState(sessionStorage.getItem(
     streamName: "",
     streamId: "",
   });
+
+  const [isAuthenticated, setIsAuthenticated] = React.useState(
+    sessionStorage.getItem("isAuthenticated") || false
+  );
 
   // this one just triggers the re-rendering of the component.
   const [participantUpdated, setParticipantUpdated] = useState(false);
@@ -514,15 +518,15 @@ const[isAuthenticated,setIsAuthenticated]=React.useState(sessionStorage.getItem(
     return result;
   }, []);
 
+  const receivedFileBuffers = {};
+
   function handleFileUpload(files) {
     console.log("line 2225", files);
 
     const file = files[0];
-
     if (!file) return;
     console.log("file", file);
 
-    // Allowed MIME types for PDF, Word, and Excel files.
     const allowedTypes = [
       "application/pdf",
       "application/msword",
@@ -532,36 +536,98 @@ const[isAuthenticated,setIsAuthenticated]=React.useState(sessionStorage.getItem(
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      alert("Only PDF, Word, or Excel files are allowed.");
+      console.log("Only PDF, Word, or Excel files are allowed.");
       return;
     }
 
-    // Check if file exceeds 25 MB
-    if (file.size > 25 * 1024 * 1024) {
-      alert("File size exceeds 25MB limit.");
+    const MAX_FILE_SIZE_MB = 25;
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      console.log(
+        `File "${file.name}" is ${(file.size / (1024 * 1024)).toFixed(
+          2
+        )}MB. Maximum allowed size is ${MAX_FILE_SIZE_MB}MB.`
+      );
+      console.log(`🚫 File too big. Max allowed: ${MAX_FILE_SIZE_MB}MB.`);
       return;
     }
 
-    // Process the file
     const reader = new FileReader();
+
     reader.onload = () => {
-      // Remove metadata by splitting the base64 string.
       const base64Data = reader.result.split(",")[1];
-      const fileMessage = {
+      const CHUNK_SIZE = 16 * 1024; // 16 KB
+      const totalChunks = Math.ceil(base64Data.length / CHUNK_SIZE);
+      let offset = 0;
+      const streamId = isPlayOnly ? roomName : publishStreamId;
+
+      const sendNextChunk = () => {
+        if (offset >= base64Data.length) {
+          console.log("✅ All chunks sent.");
+          webRTCAdaptor.sendData(
+            streamId,
+            JSON.stringify({
+              eventType: "FILE_RECEIVED_END",
+              fileName: file.name,
+              fileType: file.type,
+              fileSize: file.size,
+              senderId: streamId,
+            })
+          );
+          return;
+        }
+
+        if (
+          webRTCAdaptor.webSocketAdaptor?.dataChannel?.bufferedAmount >
+          128 * 1024
+        ) {
+          console.warn("📛 Buffer full, waiting...");
+          setTimeout(sendNextChunk, 100);
+          return;
+        }
+
+        const chunk = base64Data.slice(offset, offset + CHUNK_SIZE);
+        const message = {
+          eventType: "FILE_RECEIVED_CHUNK",
+          chunkIndex: Math.floor(offset / CHUNK_SIZE),
+          totalChunks: totalChunks,
+          fileName: file.name,
+          data: chunk,
+          senderId: streamId,
+        };
+
+        try {
+          webRTCAdaptor.sendData(streamId, JSON.stringify(message));
+          offset += CHUNK_SIZE;
+          setTimeout(sendNextChunk, 10); // Schedule next chunk
+        } catch (e) {
+          console.error("🚨 sendData error:", e);
+        }
+      };
+
+      const metadataMessage = {
         eventType: "FILE_RECEIVED",
         fileName: file.name,
         fileType: file.type,
         fileSize: file.size,
-        fileContent: base64Data, // Base64 encoded content
-        senderId: isPlayOnly ? roomName : publishStreamId,
-        name: streamName,
-        date: new Date().toString(),
+        senderId: streamId,
+        date: new Date().toISOString(),
       };
-      let streamId = isPlayOnly ? roomName : publishStreamId;
-      console.log("webRTC adapter called", streamId, fileMessage);
 
-      webRTCAdaptor?.sendData(streamId, JSON.stringify(fileMessage));
+      console.log("📢 Sending file metadata to others:", metadataMessage);
+
+      // webRTCAdaptor.sendData(streamId, JSON.stringify(metadataMessage));
+      try {
+        webRTCAdaptor.sendData(streamId, JSON.stringify(metadataMessage));
+        console.log(`📤 Metadata for file "${file.name}" sent successfully.`);
+      } catch (e) {
+        console.error("🚨 Failed to send metadata message:", e);
+      }
+
+      // Start sending
+      console.log("🚀 Starting chunked upload:", file.name);
+      sendNextChunk();
     };
+
     reader.readAsDataURL(file);
   }
 
@@ -2768,6 +2834,36 @@ const[isAuthenticated,setIsAuthenticated]=React.useState(sessionStorage.getItem(
     });
   }
 
+  // function handleSendMessage(message) {
+  //   if (publishStreamId || isPlayOnly) {
+  //     let streamId = isPlayOnly ? roomName : publishStreamId;
+  //     let iceState = webRTCAdaptor?.iceConnectionState(streamId);
+  //     if (
+  //       iceState !== null &&
+  //       iceState !== "failed" &&
+  //       iceState !== "disconnected"
+  //     ) {
+  //       if (message === "debugme") {
+  //         webRTCAdaptor?.getDebugInfo(streamId);
+  //         return;
+  //       } else if (message === "clearme") {
+  //         setMessages([]);
+  //         return;
+  //       }
+
+  //       webRTCAdaptor?.sendData(
+  //         streamId,
+  //         JSON.stringify({
+  //           eventType: "MESSAGE_RECEIVED",
+  //           message: message,
+  //           name: streamName,
+  //           senderId: streamId,
+  //           date: new Date().toString(),
+  //         })
+  //       );
+  //     }
+  //   }
+  // }
   function handleSendMessage(message) {
     if (publishStreamId || isPlayOnly) {
       let streamId = isPlayOnly ? roomName : publishStreamId;
@@ -2785,16 +2881,26 @@ const[isAuthenticated,setIsAuthenticated]=React.useState(sessionStorage.getItem(
           return;
         }
 
-        webRTCAdaptor?.sendData(
-          streamId,
-          JSON.stringify({
-            eventType: "MESSAGE_RECEIVED",
-            message: message,
-            name: streamName,
-            senderId: streamId,
-            date: new Date().toString(),
-          })
-        );
+        // Validate that message is a string or serializable
+        if (typeof message !== "string") {
+          console.error("Invalid message type for serialization:", message);
+          return;
+        }
+
+        try {
+          webRTCAdaptor?.sendData(
+            streamId,
+            JSON.stringify({
+              eventType: "MESSAGE_RECEIVED",
+              message: message,
+              name: streamName,
+              senderId: streamId,
+              date: new Date().toString(),
+            })
+          );
+        } catch (error) {
+          console.error("Error serializing message:", error);
+        }
       }
     }
   }
@@ -3396,15 +3502,23 @@ const[isAuthenticated,setIsAuthenticated]=React.useState(sessionStorage.getItem(
       } else if (eventType === "FILE_RECEIVED") {
         console.log("File received", notificationEvent.fileName);
 
-        if (
-          notificationEvent.senderId === publishStreamId ||
-          process.env.REACT_APP_FOOTER_MESSAGE_BUTTON_VISIBILITY === "false"
-        ) {
+        if (notificationEvent.senderId === publishStreamId) {
+          // Prevent echoing your own messages
           return;
         }
 
-        calculate_scroll_height();
+        // ✅ Skip incomplete/duplicate file messages (missing important metadata)
+        if (
+          !notificationEvent.fileName ||
+          !notificationEvent.fileContent ||
+          !notificationEvent.fileType ||
+          !notificationEvent.fileSize
+        ) {
+          console.warn("Skipped incomplete file message:", notificationEvent);
+          return;
+        }
 
+        // 👇 Format timestamp properly
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         notificationEvent.date = new Date(
           notificationEvent?.date
@@ -3414,6 +3528,7 @@ const[isAuthenticated,setIsAuthenticated]=React.useState(sessionStorage.getItem(
           minute: "2-digit",
         });
 
+        // 👇 Notify user
         if (!messageDrawerOpen) {
           enqueueSnackbar(`📎 ${notificationEvent.fileName}`, {
             sender: notificationEvent.name,
@@ -3425,10 +3540,68 @@ const[isAuthenticated,setIsAuthenticated]=React.useState(sessionStorage.getItem(
             autoHideDuration: 5000,
             anchorOrigin: { vertical: "top", horizontal: "right" },
           });
+
           setNumberOfUnReadMessages((numb) => numb + 1);
         }
 
+        // 👇 Add to chat/messages list
         setMessages((oldMessages) => [...oldMessages, notificationEvent]);
+      } else if (eventType === "FILE_RECEIVED_CHUNK") {
+        const { fileName, data, senderId } = notificationEvent;
+        const key = `${senderId}_${fileName}`;
+
+        if (!receivedFileBuffers[key]) {
+          receivedFileBuffers[key] = [];
+        }
+
+        receivedFileBuffers[key].push(data);
+      } else if (eventType === "FILE_RECEIVED_END") {
+        const { fileName, fileType, fileSize, senderId } = notificationEvent;
+        const key = `${senderId}_${fileName}`;
+        const base64Chunks = receivedFileBuffers[key];
+
+        if (!base64Chunks || base64Chunks.length === 0) {
+          console.warn("No chunks received for file:", fileName);
+          return;
+        }
+
+        const base64String = base64Chunks.join("");
+        const binary = atob(base64String);
+        const len = binary.length;
+        const bytes = new Uint8Array(len);
+
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+
+        const blob = new Blob([bytes], { type: fileType });
+
+        console.log("✅ File reconstructed and downloaded:", fileName);
+
+        // Clean up buffer
+        delete receivedFileBuffers[key];
+
+        // 👇 Add reconstructed file to messages with base64 content
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const timestamp = new Date().toLocaleString(getLang(), {
+          timeZone: timezone,
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        setMessages((oldMessages) => [
+          ...oldMessages,
+          {
+            eventType: "FILE_RECEIVED",
+            fileName,
+            fileType,
+            fileSize,
+            fileContent: base64String, // 🔥 Add this!
+            name: notificationEvent.name || senderId,
+            date: timestamp,
+            senderId,
+          },
+        ]);
       } else if (eventType === "SCREEN_SHARED_OFF") {
         if (!eventStreamId) {
           console.error(
@@ -3618,7 +3791,6 @@ const[isAuthenticated,setIsAuthenticated]=React.useState(sessionStorage.getItem(
       console.error("Error in handleNotificationEvent:", error, obj);
     }
   }
-
 
   const updateTalkers = (notificationEvent) => {
     const newTalkers = notificationEvent.payload
@@ -5008,11 +5180,12 @@ const[isAuthenticated,setIsAuthenticated]=React.useState(sessionStorage.getItem(
                 currentPinInfo={currentPinInfo}
               />
               <MessageDrawer
+                streamName={streamName}
                 messages={messages}
                 sendMessage={(message) => handleSendMessage(message)}
                 handleSetMessages={(messages) => handleSetMessages(messages)}
                 messageDrawerOpen={messageDrawerOpen}
-                uploadFile = {(file)=> handleFileUpload(file)}
+                uploadFile={(file) => handleFileUpload(file)}
                 handleMessageDrawerOpen={(open) =>
                   handleMessageDrawerOpen(open)
                 }
@@ -5104,7 +5277,7 @@ const[isAuthenticated,setIsAuthenticated]=React.useState(sessionStorage.getItem(
       </Grid>
     </Grid>
   ) : (
-    <Joining setIsAuthenticated = {(state) => setIsAuthenticated(state)}/>
+    <Joining setIsAuthenticated={(state) => setIsAuthenticated(state)} />
   );
 }
 

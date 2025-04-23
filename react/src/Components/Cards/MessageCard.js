@@ -1,19 +1,19 @@
-import React, { useMemo, useEffect } from 'react';
-import { Grid, Typography } from '@mui/material';
-import { urlify } from 'utils';
-import { styled, useTheme } from '@mui/material/styles';
+import React, { useMemo, useEffect } from "react";
+import { Grid, Typography } from "@mui/material";
+import { urlify } from "utils";
+import { styled, useTheme } from "@mui/material/styles";
 
 const HyperTypography = styled(Typography)(({ theme }) => ({
-  '& a': {
+  "& a": {
     // color: "#000",
   },
 }));
 
 function MessageCard(props) {
   const theme = useTheme();
-  const { m } = props;
-    console.log("MessageCard", m);
-    
+  const { m, isMe, name, message, date, file } = props;
+  console.log("MessageCard", m);
+
   // Check if the message represents a file upload
   const isFileMessage = m?.eventType === "FILE_RECEIVED";
 
@@ -40,10 +40,9 @@ function MessageCard(props) {
   const downloadUrl = useMemo(() => {
     if (!isFileMessage) return null;
     try {
-      // Construct the Data URL
       return `data:${m.fileType};base64,${m.fileContent}`;
     } catch (error) {
-      console.error('Error generating file download URL:', error);
+      console.error("Error generating file download URL:", error);
       return null;
     }
   }, [isFileMessage, m.fileContent, m.fileType]);
@@ -58,12 +57,30 @@ function MessageCard(props) {
   }, [downloadUrl]);
 
   return (
-    <Grid container sx={{ mb: 3 }} justifyContent={props?.isMe ? 'flex-end' : 'flex-start'}>
-      <Grid container alignItems="center" justifyContent={props?.isMe ? 'flex-end' : 'flex-start'}>
-        <Typography variant="body1" color={theme.palette.chatText} style={{ fontSize: 14 }}>
-          {props?.name}{'  '}
+    <Grid
+      container
+      sx={{ mb: 3 }}
+      justifyContent={props?.isMe ? "flex-end" : "flex-start"}
+    >
+      <Grid
+        container
+        alignItems="center"
+        justifyContent={props?.isMe ? "flex-end" : "flex-start"}
+      >
+        <Typography
+          variant="body1"
+          color={theme.palette.chatText}
+          style={{ fontSize: 14 }}
+        >
+          {props?.name}
+          {"  "}
         </Typography>
-        <Typography variant="body2" color={theme.palette.grey} sx={{ ml: 1 }} style={{ fontSize: 12 }}>
+        <Typography
+          variant="body2"
+          color={theme.palette.grey}
+          sx={{ ml: 1 }}
+          style={{ fontSize: 12 }}
+        >
           {props?.date}
         </Typography>
       </Grid>
@@ -73,17 +90,22 @@ function MessageCard(props) {
             variant="body1"
             fontSize={14}
             color={theme.palette.chatText}
-            align={props?.isMe ? 'right' : 'left'}
+            align={props?.isMe ? "right" : "left"}
             fontWeight={400}
             lineHeight={1.4}
           >
-            {/* Render a download link for the file */}
-            <a href={downloadUrl} download={m.fileName}
-            style={{color: "red", textDecoration:'none'}}
+            <a
+              href={downloadUrl}
+              download={m.fileName}
+              style={{ color: "red", textDecoration: "none" }}
             >
               {m.fileName}
             </a>
-            <Typography variant="caption" display="block" color={theme.palette.grey}>
+            <Typography
+              variant="caption"
+              display="block"
+              color={theme.palette.grey}
+            >
               {`Size: ${(m.fileSize / 1024).toFixed(2)} KB`}
             </Typography>
           </HyperTypography>
@@ -91,15 +113,37 @@ function MessageCard(props) {
           <HyperTypography
             variant="body1"
             fontSize={14}
-            style={{ whiteSpace: 'pre-wrap', overflowWrap: 'break-word' }}
+            style={{ whiteSpace: "pre-wrap", overflowWrap: "break-word" }}
             color={theme.palette.chatText}
-            align={props?.isMe ? 'right' : 'left'}
+            align={props?.isMe ? "right" : "left"}
             fontWeight={400}
             lineHeight={1.4}
             id="message"
           >
-            {urlify(props?.message)}
+            {/* {urlify(props?.message)} */}
+            {/* {props?.message} */}
+            {typeof props?.message === "string"
+              ? urlify(props.message)
+              : props?.message instanceof File || props?.message instanceof Blob
+              ? "[File]"
+              : "[Invalid message content]"}
           </HyperTypography>
+          //   <HyperTypography
+          //     variant="body1"
+          //     fontSize={14}
+          //     style={{ whiteSpace: "pre-wrap", overflowWrap: "break-word" }}
+          //     color={theme.palette.chatText}
+          //     align={props?.isMe ? "right" : "left"}
+          //     fontWeight={400}
+          //     lineHeight={1.4}
+          //     id="message"
+          //   >
+          //     {typeof props?.message === "string"
+          //       ? urlify(props.message)
+          //       : props?.message instanceof File || props?.message instanceof Blob
+          //       ? "[File]"
+          //       : "[Invalid message content]"}
+          //   </HyperTypography>
         )}
       </Grid>
     </Grid>
