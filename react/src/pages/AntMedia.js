@@ -697,13 +697,26 @@ function AntMedia(props) {
       setParticipantUpdated(!participantUpdated);
       //console.log("setParticipantUpdated due to videoTrackAssignments or allParticipants change.");
     }, 5000);
-  }, [videoTrackAssignments, allParticipants]); // eslint-disable-line
+  }, [videoTrackAssignments, allParticipants]);
+  // eslint-disable-line
+  useEffect(() => {
+    console.log("room changed", waitingOrMeetingRoom);
+  }, [waitingOrMeetingRoom]);
+
+
 
   function handleUnauthorizedDialogExitClicked() {
     setUnAuthorizedDialogOpen(false);
     setWaitingOrMeetingRoom("waiting");
   }
+  const handleRejoin = () => {
+    setLeftTheRoom(false);
+    setLeaveRoomWithError(false);
+    console.log("rejoin triggered");
 
+    setWaitingOrMeetingRoom("waiting");
+    // <- This is key
+  };
   /*
    * This function performs the following tasks:
    * 1. It creates two new WebRTCAdaptor instances for publish and play.
@@ -4964,9 +4977,14 @@ function AntMedia(props) {
             <LeftTheRoom
               withError={leaveRoomWithError}
               handleLeaveFromRoom={() => handleLeaveFromRoom()}
+              handleRejoin={handleRejoin}
             />
           ) : waitingOrMeetingRoom === "waiting" ? (
             <WaitingRoom
+              onCancel={() => {
+                setIsAuthenticated(false);
+                sessionStorage.removeItem("isAuthenticated");
+              }}
               isPlayOnly={isPlayOnly}
               initialized={initialized}
               localVideoCreate={(tempLocalVideo) =>

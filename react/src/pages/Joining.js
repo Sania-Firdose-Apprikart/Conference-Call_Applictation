@@ -29,15 +29,16 @@ export const Joining = ({ setIsAuthenticated }) => {
   const [openTerms, setOpenTerms] = useState(false);
   const [openPrivacy, setOpenPrivacy] = useState(false);
   const [activeLink, setActiveLink] = useState("");
-  // const { id } = useParams();
-  const id = "V04P4CTFU4";
+ 
+  const { id } = useParams();
+  // const id = "V04P4CTFU4";
   console.log("id from route in joining:", id);
 
   const navigate = useNavigate();
 
   const handleOpenTerms = () => {
     setActiveLink("terms");
-    setOpenTerms(true);
+    setOpenTerms(true); 
   };
 
   const handleCloseTerms = () => setOpenTerms(false);
@@ -96,7 +97,7 @@ export const Joining = ({ setIsAuthenticated }) => {
     }
 
     const apiUrl =
-      "https://videoserver.apprikart.com/kia_vc_api/v1/validate_vc/?user_type=customer&room=V04P4CTFU4&auth_passcode=1234";
+      "https://videoserver.apprikart.com/kia_vc_api/v1/validate_vc/";
     const params = new URLSearchParams({
       user_type: "customer",
       room: id,
@@ -112,6 +113,7 @@ export const Joining = ({ setIsAuthenticated }) => {
       });
 
       console.log("API response status:", res.status);
+
       const data = await res.json();
 
       console.log("API response data:", data);
@@ -123,9 +125,10 @@ export const Joining = ({ setIsAuthenticated }) => {
 
         // Navigate to WaitingRoom if authentication is successful
         // navigate(`/meet/${id}`);
-        setIsAuthenticated(true)
+        setIsAuthenticated(true);
       } else {
-        setError("Authentication failed");
+        const errorMsg = data?.error;
+        setError(errorMsg);
         console.log("Authentication failed", data);
       }
     } catch (err) {
@@ -170,8 +173,12 @@ export const Joining = ({ setIsAuthenticated }) => {
       >
         <Card
           sx={{
-            width: 460,
-            height: error ? 430 : 380,
+            width: {
+              xs: "90%", // for small devices
+              sm: 400, // for tablets
+              md: 460, // for desktops
+            },
+            height: error ? { xs: 450, sm: 430 } : { xs: 400, sm: 380 },
             p: 1.8,
             backgroundColor: "rgba(255, 255, 255, 0.65)", // translucent white
             backdropFilter: "blur(2px)", // blur for glass effect

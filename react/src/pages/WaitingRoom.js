@@ -321,15 +321,26 @@ function WaitingRoom(props) {
 
   /* istanbul ignore next */
   return (
-    <Container id="waiting-room">
+    <Container
+      id="waiting-room"
+      sx={{
+        padding: { xs: 2, sm: 3, md: 4 },
+        minHeight: { xs: "100vh", sm: "100vh", md: "80vh" },
+        maxHeight: { md: "90vh" },
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+      }}
+    >
       <Button
         sx={{
           position: "absolute",
-          top: "1rem",
-          right: "1rem",
+          top: { xs: "0.5rem", sm: "1rem" },
+          right: { xs: "0.5rem", sm: "1rem" },
           fontWeight: 700,
+          fontSize: { xs: "0.8rem", sm: "1rem" },
         }}
-        onClick={() => navigate(`/join/${id}`)}
+        onClick={props.onCancel}
       >
         Cancel
       </Button>
@@ -365,12 +376,12 @@ function WaitingRoom(props) {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: 400,
+            width: { xs: "90%", sm: 400 },
             bgcolor: "themeColor.70",
             border: "2px solid #000",
             boxShadow: 24,
             pt: 2,
-            px: 4,
+            px: { xs: 2, sm: 4 },
             pb: 3,
             textAlign: "center",
           }}
@@ -379,7 +390,7 @@ function WaitingRoom(props) {
             id="modal-modal-title"
             variant="h6"
             component="h2"
-            sx={{ position: "center" }}
+            sx={{ fontSize: { xs: "1.1rem", sm: "1.25rem" } }}
           >
             Connection Test
           </Typography>
@@ -388,10 +399,8 @@ function WaitingRoom(props) {
             sx={{
               mt: 2,
               color: theme.palette.text.primary,
-              marginTop: "12px",
-              marginBottom: "21px",
-              display:
-                props?.speedTestObject?.errorMessage !== "" ? "none" : "block",
+              fontSize: { xs: "0.9rem", sm: "1rem" },
+              display: props?.speedTestObject?.errorMessage ? "none" : "block",
             }}
           >
             {props?.speedTestObject?.message}
@@ -428,8 +437,7 @@ function WaitingRoom(props) {
             sx={{
               mt: 2,
               color: theme.palette.text.primary,
-              marginTop: "12px",
-              marginBottom: "21px",
+              fontSize: { xs: "0.9rem", sm: "1rem" },
               display: props?.speedTestObject?.isfailed ? "block" : "none",
             }}
           >
@@ -440,7 +448,11 @@ function WaitingRoom(props) {
             id={"speed-test-modal-close-button"}
             sx={
               props?.speedTestObject?.isfailed || speedTestModalButtonVisibility
-                ? { display: "inline-flex" }
+                ? {
+                    display: "inline-flex",
+                    mt: 2,
+                    fontSize: { xs: "0.8rem", sm: "1rem" },
+                  }
                 : { display: "none" }
             }
             onClick={() => {
@@ -453,7 +465,11 @@ function WaitingRoom(props) {
             id={"speed-test-modal-join-button"}
             sx={
               speedTestModalButtonVisibility
-                ? { display: "inline-flex" }
+                ? {
+                    display: "inline-flex",
+                    mt: 2,
+                    fontSize: { xs: "0.8rem", sm: "1rem" },
+                  }
                 : { display: "none" }
             }
             onClick={() => {
@@ -467,15 +483,12 @@ function WaitingRoom(props) {
 
       <Grid
         container
-        // spacing={4}
-        // justifyContent={
-        //   props?.role !== WebinarRoles.TempListener ? "space-between" : "center"
-        // }
-        // alignItems={"center"}
         sx={{
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          justifyContent: "center",
+          flexGrow: 1,
         }}
       >
         {props.isPlayOnly === false ? (
@@ -485,11 +498,11 @@ function WaitingRoom(props) {
               className="waiting-room-video"
               sx={{
                 position: "relative",
-                height: "250px",
+                height: { xs: "200px", sm: "250px", md: "300px" },
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                marginTop: "10px",
+                mt: { xs: 2, sm: 3 },
               }}
             >
               <div
@@ -570,8 +583,10 @@ function WaitingRoom(props) {
         {props?.role !== WebinarRoles.TempListener ? (
           <Grid
             item
-            md={props?.isPlayOnly === false ? 5 : 12}
-            sx={{ width: "100%" }}
+            xs={12}
+            sm={10}
+            md={props?.isPlayOnly ? 12 : 5}
+            sx={{ width: "100%", mt: { xs: 2, sm: 3 } }}
           >
             <Grid container justifyContent={"center"}>
               <Grid container justifyContent={"center"}>
@@ -603,7 +618,11 @@ function WaitingRoom(props) {
                   joinRoom(e);
                 }}
               >
-                <Grid item xs={10} sx={{ mt: 2, mb: 2, ml: 5 }}>
+                <Grid
+                  item
+                  xs={12}
+                  sx={{ mt: { xs: 2, sm: 2, md: 0 }, px: { xs: 2, sm: 0 } }}
+                >
                   {process.env
                     .REACT_APP_WAITING_ROOM_PARTICIPANT_NAME_READONLY ===
                   "true" ? (
@@ -617,7 +636,9 @@ function WaitingRoom(props) {
                       readOnly={true}
                       id="participant_name"
                       sx={{
-                        width: "90%",
+                        width: { xs: "100%", sm: "90%", md: "80%" },
+                        mx: "auto",
+                        display: "block",
                       }}
                     />
                   ) : (
@@ -631,6 +652,11 @@ function WaitingRoom(props) {
                       onChange={(e) => props?.setStreamName(e.target.value)}
                       placeholder={t("Your name")}
                       id="participant_name"
+                      sx={{
+                        width: { xs: "100%", sm: "90%", md: "80%" },
+                        mx: "auto",
+                        display: "block",
+                      }}
                     />
                   )}
                 </Grid>
@@ -642,8 +668,9 @@ function WaitingRoom(props) {
                   sx={{
                     bottom: 0,
                     left: 0,
-                    p: 2,
+                    p: { xs: 1, sm: 2 },
                     zIndex: 10,
+                    mt: { xs: 2, sm: 2, md: 0 },
                   }}
                 >
                   <Grid item>
@@ -665,8 +692,20 @@ function WaitingRoom(props) {
                       microphoneButtonDisabled={props?.microphoneButtonDisabled}
                     />
                   </Grid>
+                </Grid>
+
+                <Grid
+                  container
+                  columnSpacing={2}
+                  justifyContent="center"
+                  alignItems="center"
+                  sx={{
+                    bottom: 0,
+                    left: 0,
+                    zIndex: 10,
+                  }}
+                >
                   <FormControlLabel
-                    sx={{ mt: 2 }}
                     control={
                       <Checkbox
                         checked={agreed}
@@ -679,18 +718,15 @@ function WaitingRoom(props) {
                         <Link
                           href="#"
                           sx={{
-                            padding: "2px 0px 1px 0px",
                             color: "#0D6EFD",
                             textDecoration: "underline",
-                            transition: "color 0.3s ease",
-                            borderRadius: "4px",
                             border:
                               activeLink === "terms"
-                                ? "4px solid #A9D1FF"
+                                ? "2px solid #A9D1FF"
                                 : "none",
-                            "&:hover": {
-                              color: "#003d99",
-                            },
+                            borderRadius: "4px",
+                            px: 0.5,
+                            "&:hover": { color: "#003d99" },
                           }}
                           onClick={handleOpenTerms}
                         >
@@ -700,18 +736,15 @@ function WaitingRoom(props) {
                         <Link
                           href="#"
                           sx={{
-                            padding: "2px 0px 1px 0px",
                             color: "#0D6EFD",
                             textDecoration: "underline",
-                            transition: "color 0.3s ease",
-                            borderRadius: "4px",
                             border:
                               activeLink === "privacy"
-                                ? "4px solid #A9D1FF"
+                                ? "2px solid #A9D1FF"
                                 : "none",
-                            "&:hover": {
-                              color: "#003d99",
-                            },
+                            borderRadius: "4px",
+                            px: 0.5,
+                            "&:hover": { color: "#003d99" },
                           }}
                           onClick={handleOpenPrivacy}
                         >
@@ -727,11 +760,12 @@ function WaitingRoom(props) {
                   justifyContent={"center"}
                   sx={{
                     width: "100%",
+                    mt: { xs: 2, sm: 3, md: 0 },
+                    px: { xs: 2, sm: 0 },
                   }}
                 >
                   <Grid
                     item
-                    // sm={6}
                     xs={12}
                     sx={{
                       width: "100%",
@@ -751,15 +785,12 @@ function WaitingRoom(props) {
                         !agreed
                       }
                       sx={{
-                        //   props?.streamName?.length > 0 ? "#FFFFFF" : "#9E9E9E",
                         backgroundColor:
-                          props?.streamName?.length > 0 ? "#04141f" : "#7d7d7d",
+                          props?.streamName && agreed ? "#04141f" : "#7d7d7d",
                         color:
-                          props?.streamName?.length > 0 ? "#FFFFFF" : "#9E9E9E",
-                        // transition:
-                        //   "background-color 0.3s ease, color 0.3s ease",
-                        // cursor:
-                        //   props?.streamName?.length > 0 ? "pointer" : "default",
+                          props?.streamName && agreed ? "#FFFFFF" : "#9E9E9E",
+                        fontSize: { xs: "0.9rem", sm: "1rem" },
+                        py: 1,
                       }}
                     >
                       {t("Join Now")}

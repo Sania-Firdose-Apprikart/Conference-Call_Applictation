@@ -50,14 +50,21 @@ export const Termsandconditions = ({ open, onClose }) => {
       >
         <DialogActions
           sx={{
-            width: "800px",
+            width: {
+              xs: "350px", // Full width on mobile
+              sm: "700px", // Full width on tablets
+              md: "800px", // Fixed width on small and up
+            },
             display: "flex",
             justifyContent: "end",
             alignItems: "center",
             height: 10,
             borderBottom: "1px solid #ccc",
-            padding: "2px 0px 17px 0px",
-            marginLeft: "-15px",
+            padding: "2px 0 17px 0",
+            marginLeft: {
+              xs: "-15px", // No negative margin on mobile to prevent it from going off-screen
+              sm: "-15px", // Original margin for larger screens
+            },
           }}
         >
           <AiOutlineClose onClick={onClose} className="custom-close-icon" />
@@ -65,7 +72,10 @@ export const Termsandconditions = ({ open, onClose }) => {
         <DialogContent
           sx={{
             width: "100%",
-            padding: "0 3rem",
+            padding: {
+              xs: 0, // 0 padding on extra-small screens (mobile)
+              sm: "0 3rem", // 0 top/bottom and 3rem left/right on small and up
+            },
             "&::-webkit-scrollbar-track": {
               marginRight: "20px",
             },

@@ -16,7 +16,6 @@ function MessageCard(props) {
 
   // Check if the message represents a file upload
   const isFileMessage = m?.eventType === "FILE_RECEIVED";
-
   // Compute a download URL for file messages from the Base64 content.
   // const downloadUrl = useMemo(() => {
   //   if (!isFileMessage) return null;
