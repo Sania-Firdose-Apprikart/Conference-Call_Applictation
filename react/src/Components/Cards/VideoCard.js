@@ -20,7 +20,7 @@ const CustomizedVideo = styled("video")({
   width: "100%",
   height: "100%",
   objectPosition: "center",
-  backgroundColor: "transparent",
+  backgroundColor: "black !important",
 });
 
 const CustomizedBox = styled(Box)(({ theme }) => ({
