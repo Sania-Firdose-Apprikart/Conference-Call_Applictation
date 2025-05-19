@@ -2,10 +2,10 @@ import React from "react";
 import Typography from "@mui/material/Typography";
 import Avatar from "@mui/material/Avatar";
 import AvatarGroup from "@mui/material/AvatarGroup";
-import {styled, useTheme} from "@mui/material/styles";
-import {t} from "i18next";
+import { styled, useTheme } from "@mui/material/styles";
+import { t } from "i18next";
 
-const CustomizedAvatar = styled(Avatar)(({theme}) => ({
+const CustomizedAvatar = styled(Avatar)(({ theme }) => ({
   border: `3px solid ${theme.palette.themeColor?.[85]} !important`,
   color: "#fff",
   width: 44,
@@ -17,7 +17,7 @@ const CustomizedAvatar = styled(Avatar)(({theme}) => ({
   },
 }));
 
-const CustomizedAvatarGroup = styled(AvatarGroup)(({theme}) => ({
+const CustomizedAvatarGroup = styled(AvatarGroup)(({ theme }) => ({
   "& div:not(.regular-avatar)": {
     border: `3px solid ${theme.palette.themeColor?.[85]} !important`,
     backgroundColor: theme.palette.themeColor?.[80],
@@ -32,54 +32,38 @@ const CustomizedAvatarGroup = styled(AvatarGroup)(({theme}) => ({
   },
 }));
 
-
-function OthersCard(props) {
+function OthersCard({ allParticipants, publishStreamId, playingParticipants }) {
   const theme = useTheme();
+  console.log("playingParticipants:", playingParticipants);
+  
+  // 1. Build a list of “extra” participants (streamId + name)
+  const extraParticipants = Object.entries(allParticipants)
+    .filter(
+      ([streamId]) =>
+        streamId !== publishStreamId &&
+        !playingParticipants.some((p) => p.streamId === streamId)
+    )
+    .map(([streamId, participant]) => ({
+      streamId,
+      username: participant.name || "",
+    }));
 
-  const othersNames = [];
-
-  for (const [streamId, broadcastObject] of Object.entries(props?.allParticipants)) {
-    if (streamId !== props?.publishStreamId && !props?.playingParticipants.find(e => e.streamId === streamId)) {
-      othersNames.push(broadcastObject.name);
-    }
-  }
-
-  const others = othersNames;//.sort();
-
+  // 2. How many extras are there?
+  // const othersCount = extraParticipants.length;
+    console.log("line 53", allParticipants, playingParticipants)
+  const othersCount = allParticipants.length - playingParticipants.length
   return (
-    <div className="others-tile-inner" style={{background: theme.palette.themeColor?.[71]}}>
-      <CustomizedAvatarGroup sx={{justifyContent: "center"}}>
-        {others.map(({username}, index) => {
-          if (username?.length > 0) {
-            const nameArr = username.split(" ");
-            const secondLetter = nameArr.length > 1 ? nameArr[1][0] : "";
-            const initials =
-              `${nameArr[0][0]}${secondLetter}`.toLocaleUpperCase();
-
-            return (
-              <CustomizedAvatar
-                key={index}
-                alt={username}
-                className="regular-avatar"
-                sx={{
-                  bgcolor: "green.50",
-                  color: "#fff",
-                  fontSize: {xs: 16, md: 22},
-                }}
-              >
-                {initials}
-              </CustomizedAvatar>
-            );
-          } else {
-            return null;
-          }
-        })}
-      </CustomizedAvatarGroup>
-      <Typography sx={{mt: 2, color: "#fff"}}>
-        {others.length} {others.length > 1 ? t("Others") : t("Other")}
+    <div
+      className="others-tile-inner"
+      style={{ background: "black"}}
+    >
+     
+      {/* Display “X other(s)” */}
+      <Typography sx={{ mt: 2, color: "#fff" }}>
+        {othersCount} {othersCount > 1 ? t("Others") : t("Other")}
       </Typography>
     </div>
   );
-};
+}
 
 export default OthersCard;

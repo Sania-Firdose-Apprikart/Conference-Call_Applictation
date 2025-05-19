@@ -25,13 +25,14 @@ import { useTheme } from "@mui/material/styles";
 
 const getCustomizedGridStyle = (theme) => {
   let customizedGridStyle = {
-    backgroundColor: theme.palette.themeColor?.[80],
+    backgroundColor: "#000",
     position: "fixed",
     bottom: 0,
     left: 0,
     padding: 16,
     width: "100vw",
     zIndex: 101,
+     
   };
 
   if (isComponentMode()) {
@@ -87,12 +88,8 @@ function Footer(props) {
 
   /* istanbul ignore next */
   return (
-    <CustomizedGrid
-      container
-      alignItems={"center"}
-      justifyContent={{ xs: "center", sm: "space-between" }}
-    >
-      <Grid item sx={{ display: { xs: "none", sm: "block" } }}>
+    <CustomizedGrid container alignItems={"center"} justifyContent={"center"}>
+      {/* <Grid item sx={{ display: { xs: "none", sm: "block" } }}>
         <Grid container alignItems={"center"}>
           {process.env.REACT_APP_FOOTER_APP_LOGO_VISIBILITY === "true" ? (
             <a
@@ -112,7 +109,7 @@ function Footer(props) {
           </Typography>
           <InfoButton isPlayOnly={props?.isPlayOnly} />
         </Grid>
-      </Grid>
+      </Grid> */}
       {props?.isPlayOnly === false || props?.isEnterDirectly === false ? (
         <Grid item>
           <Grid
@@ -406,7 +403,17 @@ function Footer(props) {
         </Grid>
       ) : null}
 
-      <Grid item sx={{ display: { xs: "none", sm: "block" } }}>
+      <Grid
+        item
+        sx={{
+          position: "absolute",
+          right: 24,
+          top: "50%",
+          transform: "translateY(-50%)",
+          display: { xs: "none", sm: "block" },
+         
+        }}
+      >
         {process.env.REACT_APP_FOOTER_CLOCK_VISIBILITY === "true" ? (
           <TimeZone isBroadcasting={props?.isBroadcasting} />
         ) : null}

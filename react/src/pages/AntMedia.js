@@ -336,12 +336,10 @@ var playReconnected;
 
 function AntMedia(props) {
   // eslint-disable-next-line
-  const params = useParams();
   const initialRoomName = isComponentMode()
     ? getRootAttribute("data-room-name")
-    : params.id;
-  console.log("initialRoomName: ", initialRoomName);
-  console.log("initialParams: ", params);
+    : useParams().id;
+  console.log("initialRoomName line 287", initialRoomName);
 
   const [roomName, setRoomName] = useState(initialRoomName);
 
@@ -386,10 +384,6 @@ function AntMedia(props) {
     streamName: "",
     streamId: "",
   });
-
-  const [isAuthenticated, setIsAuthenticated] = React.useState(
-    sessionStorage.getItem("isAuthenticated") || false
-  );
 
   // this one just triggers the re-rendering of the component.
   const [participantUpdated, setParticipantUpdated] = useState(false);
@@ -518,119 +512,6 @@ function AntMedia(props) {
     return result;
   }, []);
 
-  const receivedFileBuffers = {};
-
-  function handleFileUpload(files) {
-    console.log("line 2225", files);
-
-    const file = files[0];
-    if (!file) return;
-    console.log("file", file);
-
-    const allowedTypes = [
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "application/vnd.ms-excel",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    ];
-
-    if (!allowedTypes.includes(file.type)) {
-      console.log("Only PDF, Word, or Excel files are allowed.");
-      return;
-    }
-
-    const MAX_FILE_SIZE_MB = 25;
-    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-      console.log(
-        `File "${file.name}" is ${(file.size / (1024 * 1024)).toFixed(
-          2
-        )}MB. Maximum allowed size is ${MAX_FILE_SIZE_MB}MB.`
-      );
-      console.log(`🚫 File too big. Max allowed: ${MAX_FILE_SIZE_MB}MB.`);
-      return;
-    }
-
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      const base64Data = reader.result.split(",")[1];
-      const CHUNK_SIZE = 16 * 1024; // 16 KB
-      const totalChunks = Math.ceil(base64Data.length / CHUNK_SIZE);
-      let offset = 0;
-      const streamId = isPlayOnly ? roomName : publishStreamId;
-
-      const sendNextChunk = () => {
-        if (offset >= base64Data.length) {
-          console.log("✅ All chunks sent.");
-          webRTCAdaptor.sendData(
-            streamId,
-            JSON.stringify({
-              eventType: "FILE_RECEIVED_END",
-              fileName: file.name,
-              fileType: file.type,
-              fileSize: file.size,
-              senderId: streamId,
-            })
-          );
-          return;
-        }
-
-        if (
-          webRTCAdaptor.webSocketAdaptor?.dataChannel?.bufferedAmount >
-          128 * 1024
-        ) {
-          console.warn("📛 Buffer full, waiting...");
-          setTimeout(sendNextChunk, 100);
-          return;
-        }
-
-        const chunk = base64Data.slice(offset, offset + CHUNK_SIZE);
-        const message = {
-          eventType: "FILE_RECEIVED_CHUNK",
-          chunkIndex: Math.floor(offset / CHUNK_SIZE),
-          totalChunks: totalChunks,
-          fileName: file.name,
-          data: chunk,
-          senderId: streamId,
-        };
-
-        try {
-          webRTCAdaptor.sendData(streamId, JSON.stringify(message));
-          offset += CHUNK_SIZE;
-          setTimeout(sendNextChunk, 10); // Schedule next chunk
-        } catch (e) {
-          console.error("🚨 sendData error:", e);
-        }
-      };
-
-      const metadataMessage = {
-        eventType: "FILE_RECEIVED",
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-        senderId: streamId,
-        date: new Date().toISOString(),
-      };
-
-      console.log("📢 Sending file metadata to others:", metadataMessage);
-
-      // webRTCAdaptor.sendData(streamId, JSON.stringify(metadataMessage));
-      try {
-        webRTCAdaptor.sendData(streamId, JSON.stringify(metadataMessage));
-        console.log(`📤 Metadata for file "${file.name}" sent successfully.`);
-      } catch (e) {
-        console.error("🚨 Failed to send metadata message:", e);
-      }
-
-      // Start sending
-      console.log("🚀 Starting chunked upload:", file.name);
-      sendNextChunk();
-    };
-
-    reader.readAsDataURL(file);
-  }
-
   // speed test related states
   const speedTestStreamId = React.useRef(makeid(20));
   const speedTestForPublishWebRtcAdaptor = React.useRef(null);
@@ -669,6 +550,9 @@ function AntMedia(props) {
   const [leaveRoomWithError, setLeaveRoomWithError] = React.useState(null);
 
   const [initialized, setInitialized] = React.useState(!!props.isTest);
+  const [isAuthenticated, setIsAuthenticated] = React.useState(
+    sessionStorage.getItem("isAuthenticated") || false
+  );
   const [publisherRequestListDrawerOpen, setPublisherRequestListDrawerOpen] =
     React.useState(false);
   // open or close the mute participant dialog.
@@ -697,26 +581,13 @@ function AntMedia(props) {
       setParticipantUpdated(!participantUpdated);
       //console.log("setParticipantUpdated due to videoTrackAssignments or allParticipants change.");
     }, 5000);
-  }, [videoTrackAssignments, allParticipants]);
-  // eslint-disable-line
-  useEffect(() => {
-    console.log("room changed", waitingOrMeetingRoom);
-  }, [waitingOrMeetingRoom]);
-
-
+  }, [videoTrackAssignments, allParticipants]); // eslint-disable-line
 
   function handleUnauthorizedDialogExitClicked() {
     setUnAuthorizedDialogOpen(false);
     setWaitingOrMeetingRoom("waiting");
   }
-  const handleRejoin = () => {
-    setLeftTheRoom(false);
-    setLeaveRoomWithError(false);
-    console.log("rejoin triggered");
 
-    setWaitingOrMeetingRoom("waiting");
-    // <- This is key
-  };
   /*
    * This function performs the following tasks:
    * 1. It creates two new WebRTCAdaptor instances for publish and play.
@@ -1292,7 +1163,7 @@ function AntMedia(props) {
   }
 
   function checkAndUpdateVideoAudioSources() {
-    if (isPlayOnly) {
+    if (isPlayOnly || !isAuthenticated) {
       console.info(
         "Play only mode is active, no need to check and update video audio sources."
       );
@@ -1809,9 +1680,13 @@ function AntMedia(props) {
   }
 
   useEffect(() => {
-    createWebRTCAdaptor();
+    console.log("isAuthenticated modified", isAuthenticated);
+
+    if (isAuthenticated) {
+      createWebRTCAdaptor();
+    }
     //just run once when component is mounted
-  }, []); //eslint-disable-line
+  }, [isAuthenticated]); //eslint-disable-line
 
   function createWebRTCAdaptor() {
     reconnecting = false;
@@ -1847,7 +1722,7 @@ function AntMedia(props) {
         setDevices(devices);
       });
     }
-  }, [devices, initialized]); // eslint-disable-line
+  }, [devices, initialized, isAuthenticated]); // eslint-disable-line
 
   if (webRTCAdaptor) {
     webRTCAdaptor.callback = infoCallback;
@@ -1941,21 +1816,14 @@ function AntMedia(props) {
     // eslint-disable-next-line
   }, [initialized]);
 
-  //   useEffect(() => {
-  //     if (!isPlayOnly && initialized && webRTCAdaptor && publishStreamId) {
-  //       console.log("📡 Ready to publish with:", publishStreamId);
-  //       webRTCAdaptor.publish(publishStreamId);
-  //     }
-  //   }, [initialized, webRTCAdaptor, publishStreamId]);
-
   function infoCallback(info, obj) {
     if (info === "initialized") {
       setInitialized(true);
-
-      console.log("PublishStreamId at init:", publishStreamId);
     } else if (info === "subtrackList") {
       let subtrackList = obj.subtrackList;
-      console.log("subtrackList:", subtrackList);
+      let subTrackArray = subtrackList.map((track) => JSON.parse(track));
+      console.log("subtrackList:", subtrackList, subTrackArray);
+      setPagedParticipants(subTrackArray);
       let allParticipantsTemp = allParticipants;
       if (!isPlayOnly && publishStreamId) {
         allParticipantsTemp[publishStreamId] = allParticipants[publishStreamId];
@@ -2053,12 +1921,9 @@ function AntMedia(props) {
         delete allParticipantsTemp[obj.trackId];
         return allParticipantsTemp;
       });
-
-      // Remove the track from videoTrackAssignments
-      setVideoTrackAssignments((prevAssignments) =>
-        prevAssignments.filter((vta) => vta.streamId !== obj.trackId)
+      setVideoTrackAssignments((prev) =>
+        prev.filter((track) => track.streamId !== obj.trackId)
       );
-
       if (!isNull(currentPinInfo) && currentPinInfo.streamId === obj.trackId) {
         console.log("currently pinned stream is removed:" + obj.trackId);
         unpinVideo(false);
@@ -2483,6 +2348,8 @@ function AntMedia(props) {
       setCurrentPinInfo(null);
     }
     setParticipantUpdated(!participantUpdated);
+    setParticipantUpdated((prev) => !prev);
+    setVideoTrackAssignments((prev) => [...prev]);
   }
 
   /**
@@ -2689,36 +2556,15 @@ function AntMedia(props) {
     screenShareWebRtcAdaptor.current.stop(screenShareStreamId.current);
     screenShareWebRtcAdaptor.current.closeStream();
     screenShareWebRtcAdaptor.current.closeWebSocket();
+    console.log("Screen share stopped");
     unpinVideo(false);
-
-    // Send SCREEN_SHARED_OFF notification
-    let notEvent = {
-      streamId: screenShareStreamId.current,
-      eventType: "SCREEN_SHARED_OFF",
-    };
-    console.info("send notification event", notEvent);
-    webRTCAdaptor?.sendData(publishStreamId, JSON.stringify(notEvent));
-
-    // Update user metadata
-    let userStatusMetadata = getUserStatusMetadata(
-      isMyMicMuted,
-      !isMyCamTurnedOff,
-      false // isScreenShared set to false
-    );
-    webRTCAdaptor?.publish(
-      publishStreamId,
-      token,
-      subscriberId,
-      subscriberCode,
-      streamName,
-      roomName,
-      JSON.stringify(userStatusMetadata),
-      role
-    );
-
+    handleSendNotificationEvent("UNPIN_USER", publishStreamId, {
+      streamId: publishStreamId,
+    });
     setVideoTrackAssignments((prev) =>
       prev.filter((track) => track.streamId !== screenShareStreamId.current)
     );
+
     setAllParticipants((prev) => {
       const updated = { ...prev };
       delete updated[screenShareStreamId.current];
@@ -2864,28 +2710,69 @@ function AntMedia(props) {
           return;
         }
 
-        // Validate that message is a string or serializable
-        if (typeof message !== "string") {
-          console.error("Invalid message type for serialization:", message);
-          return;
-        }
-
-        try {
-          webRTCAdaptor?.sendData(
-            streamId,
-            JSON.stringify({
-              eventType: "MESSAGE_RECEIVED",
-              message: message,
-              name: streamName,
-              senderId: streamId,
-              date: new Date().toString(),
-            })
-          );
-        } catch (error) {
-          console.error("Error serializing message:", error);
-        }
+        webRTCAdaptor?.sendData(
+          streamId,
+          JSON.stringify({
+            eventType: "MESSAGE_RECEIVED",
+            message: message,
+            name: streamName,
+            senderId: streamId,
+            date: new Date().toString(),
+          })
+        );
       }
     }
+  }
+
+  function handleFileUpload(files) {
+    console.log("line 2225", files);
+
+    const file = files[0];
+
+    if (!file) return;
+    console.log("file", file);
+
+    // Allowed MIME types for PDF, Word, and Excel files.
+    const allowedTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      alert("Only PDF, Word, or Excel files are allowed.");
+      return;
+    }
+
+    // Check if file exceeds 25 MB
+    if (file.size > 25 * 1024 * 1024) {
+      alert("File size exceeds 25MB limit.");
+      return;
+    }
+
+    // Process the file
+    const reader = new FileReader();
+    reader.onload = () => {
+      // Remove metadata by splitting the base64 string.
+      const base64Data = reader.result.split(",")[1];
+      const fileMessage = {
+        eventType: "FILE_RECEIVED",
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        fileContent: base64Data, // Base64 encoded content
+        senderId: isPlayOnly ? roomName : publishStreamId,
+        name: streamName,
+        date: new Date().toString(),
+      };
+      let streamId = isPlayOnly ? roomName : publishStreamId;
+      console.log("webRTC adapter called", streamId, fileMessage);
+
+      webRTCAdaptor?.sendData(streamId, JSON.stringify(fileMessage));
+    };
+    reader.readAsDataURL(file);
   }
 
   function handleDebugInfo(debugInfo) {
@@ -2971,394 +2858,20 @@ function AntMedia(props) {
     setWaitingOrMeetingRoom("waiting");
   }, [isPlayOnly]);
 
-  // function handleNotificationEvent(obj) {
-  //   var notificationEvent = JSON.parse(obj.data);
-  //   //console.log("handleNotificationEvent:", notificationEvent);
-  //   if (notificationEvent != null && typeof notificationEvent == "object") {
-  //     var eventStreamId = notificationEvent.streamId;
-  //     var eventType = notificationEvent.eventType;
-
-  //     if (
-  //       eventType === "CAM_TURNED_OFF" ||
-  //       eventType === "CAM_TURNED_ON" ||
-  //       eventType === "MIC_MUTED" ||
-  //       eventType === "MIC_UNMUTED"
-  //     ) {
-  //       webRTCAdaptor?.getBroadcastObject(eventStreamId);
-  //     } else if (eventType === "RECORDING_TURNED_ON") {
-  //       setIsRecordPluginActive(true);
-  //     } else if (eventType === "RECORDING_TURNED_OFF") {
-  //       setIsRecordPluginActive(false);
-  //     } else if (
-  //       eventType === "BROADCAST_ON" &&
-  //       eventStreamId === publishStreamId
-  //     ) {
-  //       setIsBroadcasting(true);
-  //       console.log("BROADCAST_ON");
-  //     } else if (
-  //       eventType === "BROADCAST_OFF" &&
-  //       eventStreamId === publishStreamId
-  //     ) {
-  //       setIsBroadcasting(false);
-  //       console.log("BROADCAST_OFF");
-  //     } else if (eventType === "MESSAGE_RECEIVED") {
-  //       // if message arrives from myself or footer message button is disabled then we are not going to show it.
-  //       if (
-  //         notificationEvent.senderId === publishStreamId ||
-  //         process.env.REACT_APP_FOOTER_MESSAGE_BUTTON_VISIBILITY === "false"
-  //       ) {
-  //         return;
-  //       }
-  //       calculate_scroll_height();
-  //       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  //       notificationEvent.date = new Date(
-  //         notificationEvent?.date
-  //       ).toLocaleString(getLang(), {
-  //         timeZone: timezone,
-  //         hour: "2-digit",
-  //         minute: "2-digit",
-  //       });
-  //       // if message arrives.
-  //       // if there is an new message and user has not opened message component then we are going to increase number of unread messages by one.
-  //       // we are gonna also send snackbar.
-  //       if (!messageDrawerOpen) {
-  //         enqueueSnackbar(notificationEvent.message, {
-  //           sender: notificationEvent.name,
-  //           variant: "message",
-  //           onClick: () => {
-  //             handleMessageDrawerOpen(true);
-  //             setNumberOfUnReadMessages(0);
-  //           },
-  //           autoHideDuration: 5000,
-  //           anchorOrigin: {
-  //             vertical: "top",
-  //             horizontal: "right",
-  //           },
-  //         });
-  //         setNumberOfUnReadMessages((numb) => numb + 1);
-  //       }
-  //       setMessages((oldMessages) => {
-  //         let lastMessage = oldMessages[oldMessages.length - 1]; //this must remain mutable
-  //         const isSameUser = lastMessage?.name === notificationEvent?.name;
-  //         const sentInSameTime = lastMessage?.date === notificationEvent?.date;
-
-  //         if (isSameUser && sentInSameTime) {
-  //           //group the messages *sent back to back in the same timeframe by the same user* by joinig the new message text with new line
-  //           lastMessage.message =
-  //             lastMessage.message + "\n" + notificationEvent.message;
-  //           return [...oldMessages]; // don't make this "return oldMessages;" this is to trigger the useEffect for scroll bottom and get over showing the last prev state do
-  //         } else {
-  //           return [...oldMessages, notificationEvent];
-  //         }
-  //       });
-  //     } else if (
-  //       eventType === "REACTIONS" &&
-  //       notificationEvent.senderStreamId !== publishStreamId
-  //     ) {
-  //       showReactions(
-  //         notificationEvent.senderStreamId,
-  //         notificationEvent.senderStreamName,
-  //         notificationEvent.reaction,
-  //         allParticipants
-  //       );
-  //     } else if (
-  //       eventType === "RAISE_HAND" &&
-  //       notificationEvent.senderStreamId !== publishStreamId
-  //     ) {
-  //       console.log("line 2842", senderName);
-
-  //       showRaiseHand(
-  //         notificationEvent.streamId,
-  //         notificationEvent.senderStreamName,
-  //         notificationEvent.isRaised,
-  //         allParticipants,
-  //         senderName
-  //       );
-  //     } else if (eventType === "TURN_YOUR_CAM_OFF") {
-  //       if (publishStreamId === notificationEvent.streamId) {
-  //         console.warn(notificationEvent.senderStreamId, "closed your cam");
-  //         checkAndTurnOffLocalCamera(publishStreamId);
-  //       }
-  //     } else if (eventType === "TURN_YOUR_MIC_ON") {
-  //       if (publishStreamId === notificationEvent.streamId) {
-  //         console.warn(notificationEvent.senderStreamId, "turns your mic on");
-  //         unmuteLocalMic();
-  //       }
-  //     } else if (eventType === "TURN_YOUR_MIC_OFF") {
-  //       if (publishStreamId === notificationEvent.streamId) {
-  //         console.warn(notificationEvent.senderStreamId, "muted you");
-  //         muteLocalMic();
-  //       }
-  //     } else if (eventType === "PIN_USER") {
-  //       if (notificationEvent.streamId === publishStreamId && !isScreenShared) {
-  //         updateVideoSendResolution(true);
-  //       }
-  //     } else if (eventType === "UNPIN_USER") {
-  //       if (notificationEvent.streamId === publishStreamId && !isScreenShared) {
-  //         updateVideoSendResolution(false);
-  //       }
-  //     } else if (eventType === "SCREEN_SHARED_ON") {
-  //       // Existing logic to add screen share stream to allParticipants and videoTrackAssignments
-  //       setAllParticipants((prev) => ({
-  //         ...prev,
-  //         [streamId]: {
-  //           streamId,
-  //           name: prev[streamId]?.name || "Screen Share",
-  //           parsedMetaData: { isScreenShared: true },
-  //           status: "livestream",
-  //         },
-  //       }));
-  //     } else if (eventType === "SCREEN_SHARED_OFF") {
-  //       // Remove screen share stream from allParticipants and videoTrackAssignments
-  //       setAllParticipants((prev) => {
-  //         const updated = { ...prev };
-  //         delete updated[streamId];
-  //         return updated;
-  //       });
-  //       setVideoTrackAssignments((prev) =>
-  //         prev.filter((track) => track.streamId !== streamId)
-  //       );
-  //       // Optionally unpin the video if it was pinned
-  //       unpinVideo(false);
-  //     } else if (eventType === "VIDEO_TRACK_ASSIGNMENT_LIST") {
-  //       // There are 2 operations here:
-  //       // 1. VTA available in both sides -> Update
-  //       // 2. VTA available in the current state but not in the new list -> Remove
-  //       // We don't need to add new VTA because it will be added by the handlePlayVideo function
-
-  //       let receivedVideoTrackAssignments = notificationEvent.payload;
-
-  //       console.info(
-  //         "VIDEO_TRACK_ASSIGNMENT_LIST -> ",
-  //         JSON.stringify(receivedVideoTrackAssignments)
-  //       );
-
-  //       // Remove empty trackId assignments
-  //       //receivedVideoTrackAssignments = receivedVideoTrackAssignments.filter((vta) => vta.trackId !== "");
-
-  //       let currentVideoTrackAssignments = [...videoTrackAssignments];
-
-  //       let tempVideoTrackAssignmentsNew = [];
-
-  //       let tempAllParticipants = { ...allParticipants };
-
-  //       // This function checks the case 1 and case 2
-  //       currentVideoTrackAssignments.forEach((tempVideoTrackAssignment) => {
-  //         let assignment;
-
-  //         receivedVideoTrackAssignments.forEach((videoTrackAssignment) => {
-  //           if (
-  //             tempVideoTrackAssignment.videoLabel ===
-  //             videoTrackAssignment.videoLabel
-  //           ) {
-  //             assignment = videoTrackAssignment;
-  //           }
-  //         });
-
-  //         if (
-  //           tempVideoTrackAssignment.isMine ||
-  //           tempVideoTrackAssignment.isFake ||
-  //           !isNull(assignment)
-  //         ) {
-  //           if (
-  //             isVideoLabelExists(
-  //               tempVideoTrackAssignment.videoLabel,
-  //               tempVideoTrackAssignmentsNew
-  //             )
-  //           ) {
-  //             console.error(
-  //               "Video label is already exist: " +
-  //                 tempVideoTrackAssignment.videoLabel
-  //             );
-  //           } else {
-  //             tempVideoTrackAssignmentsNew.push(tempVideoTrackAssignment);
-  //           }
-  //         }
-  //       });
-
-  //       if (!_.isEqual(allParticipants, tempAllParticipants)) {
-  //         setAllParticipants(tempAllParticipants);
-  //       }
-
-  //       currentVideoTrackAssignments = [...tempVideoTrackAssignmentsNew];
-
-  //       // update participants according to current assignments
-  //       receivedVideoTrackAssignments.forEach((vta) => {
-  //         let existingAssignment = currentVideoTrackAssignments.find(
-  //           (oldVTA) => oldVTA.videoLabel === vta.videoLabel
-  //         );
-  //         if (existingAssignment) {
-  //           existingAssignment.streamId = vta.trackId;
-  //           existingAssignment.isReserved = vta.reserved;
-  //         }
-  //         if (!allParticipants[vta.trackId]) {
-  //           webRTCAdaptor?.getBroadcastObject(vta.trackId);
-  //         }
-  //       });
-
-  //       checkScreenSharingStatus();
-
-  //       // check if there is any difference between old and new assignments
-  //       //if (!_.isEqual(currentVideoTrackAssignments, videoTrackAssignments)) {
-  //       setVideoTrackAssignments(currentVideoTrackAssignments);
-  //       requestSyncAdministrativeFields();
-  //       setParticipantUpdated(!participantUpdated);
-  //       //}
-  //     } else if (eventType === "AUDIO_TRACK_ASSIGNMENT") {
-  //       clearInterval(timeoutRef.current);
-  //       timeoutRef.current = setTimeout(() => {
-  //         talkers.current = [];
-  //       }, 1000);
-  //       //console.log(JSON.stringify(notificationEvent.payload));
-  //       updateTalkers(notificationEvent);
-  //     } else if (eventType === "TRACK_LIST_UPDATED") {
-  //       console.info("TRACK_LIST_UPDATED -> ", obj);
-  //       webRTCAdaptor?.getSubtrackCount(roomName, null, null);
-  //     } else if (eventType === "UPDATE_PARTICIPANT_ROLE") {
-  //       console.log("UPDATE_PARTICIPANT_ROLE -> ", obj);
-
-  //       console.log(
-  //         "UPDATE_PARTICIPANT_ROLE is received by " + publishStreamId
-  //       );
-
-  //       let updatedParticipant = allParticipants[notificationEvent.streamId];
-
-  //       if (isNull(updatedParticipant)) {
-  //         console.warn(
-  //           "Cannot find broadcast object for streamId: " +
-  //             notificationEvent.streamId,
-  //           " in allParticipants. Updated participant list request is sent."
-  //         );
-  //         webRTCAdaptor?.getBroadcastObject(notificationEvent.streamId);
-  //         return;
-  //       }
-
-  //       displayRoleUpdateMessage(
-  //         notificationEvent.streamId,
-  //         updatedParticipant.role,
-  //         notificationEvent.role
-  //       );
-
-  //       updatedParticipant.role = notificationEvent.role;
-
-  //       console.log(
-  //         "UPDATE_PARTICIPANT_ROLE event received and role updated for ",
-  //         updatedParticipant
-  //       );
-
-  //       if (publishStreamId === notificationEvent.streamId) {
-  //         setRole(notificationEvent.role);
-  //       } else {
-  //         console.log(
-  //           "UPDATE_PARTICIPANT_ROLE event received and subtracks are queried"
-  //         );
-  //         webRTCAdaptor.getBroadcastObject(notificationEvent.streamId);
-  //       }
-  //       setParticipantUpdated(!participantUpdated);
-  //     } else if (eventType === "REQUEST_BECOME_PUBLISHER") {
-  //       if (role === WebinarRoles.Host || role === WebinarRoles.ActiveHost) {
-  //         if (requestSpeakerList.includes(notificationEvent.senderStreamId)) {
-  //           console.log(
-  //             "Request is already received from ",
-  //             notificationEvent.senderStreamId
-  //           );
-  //           return;
-  //         }
-  //         setRequestSpeakerList((oldRequestSpeakerList) => {
-  //           return [...oldRequestSpeakerList, notificationEvent.senderStreamId];
-  //         });
-  //         showInfoSnackbarWithLatency(
-  //           notificationEvent.senderStreamId +
-  //             t(" is requesting to become a speaker")
-  //         );
-  //       }
-  //     } else if (eventType === "MAKE_LISTENER_AGAIN") {
-  //       if (
-  //         role === WebinarRoles.TempListener ||
-  //         role === WebinarRoles.ActiveTempListener
-  //       ) {
-  //         showInfoSnackbarWithLatency(t("You are made listener again"));
-  //         mediaConstraints = {
-  //           video: false,
-  //           audio: false,
-  //         };
-  //         setIsPlayed(false);
-  //         setRole(WebinarRoles.Listener);
-  //         setIsPlayOnly(true);
-  //       }
-  //     } else if (eventType === "APPROVE_BECOME_PUBLISHER") {
-  //       if (
-  //         role === WebinarRoles.Listener &&
-  //         notificationEvent.senderStreamId === publishStreamId
-  //       ) {
-  //         showInfoSnackbarWithLatency(
-  //           t("Your request to become a speaker is approved")
-  //         );
-  //         mediaConstraints = {
-  //           // setting constraints here breaks source switching on firefox.
-  //           video: videoQualityConstraints.video,
-  //           audio: audioQualityConstraints.audio,
-  //         };
-  //         setRole(WebinarRoles.TempListener);
-  //         setIsPlayOnly(false);
-  //       }
-  //     } else if (eventType === "REJECT_BECOME_PUBLISHER") {
-  //       if (
-  //         role === WebinarRoles.Listener &&
-  //         notificationEvent.senderStreamId === publishStreamId
-  //       ) {
-  //         showInfoSnackbarWithLatency(
-  //           t("Your request to become a speaker is rejected")
-  //         );
-  //       }
-  //     }
-  //   }
-  // }
-
   function handleNotificationEvent(obj) {
-    try {
-      // Validate input
-      if (!obj || !obj.data) {
-        console.error("Invalid event object or missing data:", obj);
-        return;
-      }
-
-      let notificationEvent;
-      try {
-        notificationEvent = JSON.parse(obj.data);
-      } catch (parseError) {
-        console.error("Failed to parse event.data:", parseError, obj.data);
-        return;
-      }
-
-      // Validate notification object
-      if (!notificationEvent || typeof notificationEvent !== "object") {
-        console.error("Invalid notification object:", notificationEvent);
-        return;
-      }
-
-      const eventStreamId = notificationEvent.streamId;
-      const eventType = notificationEvent.eventType;
-
-      // Ensure required properties exist for events that need them
-      if (!eventType) {
-        console.error("Missing eventType in notification:", notificationEvent);
-        return;
-      }
+    var notificationEvent = JSON.parse(obj.data);
+    console.log("handleNotificationEvent:", notificationEvent);
+    if (notificationEvent != null && typeof notificationEvent == "object") {
+      var eventStreamId = notificationEvent.streamId;
+      var eventType = notificationEvent.eventType;
 
       if (
         eventType === "CAM_TURNED_OFF" ||
         eventType === "CAM_TURNED_ON" ||
         eventType === "MIC_MUTED" ||
-        eventType === "MIC_UNMUTED"
+        eventType === "MIC_UNMUTED" ||
+        eventType === "CAM_STATUS"
       ) {
-        if (!eventStreamId) {
-          console.error(
-            `Missing streamId for ${eventType}:`,
-            notificationEvent
-          );
-          return;
-        }
         webRTCAdaptor?.getBroadcastObject(eventStreamId);
       } else if (eventType === "RECORDING_TURNED_ON") {
         setIsRecordPluginActive(true);
@@ -3376,13 +2889,55 @@ function AntMedia(props) {
       ) {
         setIsBroadcasting(false);
         console.log("BROADCAST_OFF");
-      } else if (eventType === "MESSAGE_RECEIVED") {
+      } else if (eventType === "FILE_RECEIVED") {
+        console.log("File received", notificationEvent.fileName);
+
         if (
           notificationEvent.senderId === publishStreamId ||
           process.env.REACT_APP_FOOTER_MESSAGE_BUTTON_VISIBILITY === "false"
         ) {
           return;
         }
+
+        calculate_scroll_height();
+
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        notificationEvent.date = new Date(
+          notificationEvent?.date
+        ).toLocaleString(getLang(), {
+          timeZone: timezone,
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        if (!messageDrawerOpen) {
+          enqueueSnackbar(`📎 ${notificationEvent.fileName}`, {
+            sender: notificationEvent.name,
+            variant: "file",
+            onClick: () => {
+              handleMessageDrawerOpen(true);
+              setNumberOfUnReadMessages(0);
+            },
+            autoHideDuration: 5000,
+            anchorOrigin: { vertical: "top", horizontal: "right" },
+          });
+          setNumberOfUnReadMessages((numb) => numb + 1);
+        }
+
+        setMessages((oldMessages) => [...oldMessages, notificationEvent]);
+      } else if (
+        eventType === "MESSAGE_RECEIVED" ||
+        eventType === "TEXT_MESSAGE"
+      ) {
+        // if message arrives from myself or footer message button is disabled then we are not going to show it.
+        if (
+          notificationEvent.senderId === publishStreamId ||
+          process.env.REACT_APP_FOOTER_MESSAGE_BUTTON_VISIBILITY === "false"
+        ) {
+          return;
+        }
+        console.log("TEXT MESSAGE", notificationEvent);
+
         calculate_scroll_height();
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         notificationEvent.date = new Date(
@@ -3392,6 +2947,9 @@ function AntMedia(props) {
           hour: "2-digit",
           minute: "2-digit",
         });
+        // if message arrives.
+        // if there is an new message and user has not opened message component then we are going to increase number of unread messages by one.
+        // we are gonna also send snackbar.
         if (!messageDrawerOpen) {
           enqueueSnackbar(notificationEvent.message, {
             sender: notificationEvent.name,
@@ -3409,14 +2967,17 @@ function AntMedia(props) {
           setNumberOfUnReadMessages((numb) => numb + 1);
         }
         setMessages((oldMessages) => {
-          let lastMessage = oldMessages[oldMessages.length - 1];
-          const isSameUser = lastMessage?.name === notificationEvent?.name;
+          let lastMessage = oldMessages[oldMessages.length - 1]; //this must remain mutable
+          const isSameUser =
+            lastMessage?.name === notificationEvent?.name ||
+            notificationEvent?.display_names;
           const sentInSameTime = lastMessage?.date === notificationEvent?.date;
 
           if (isSameUser && sentInSameTime) {
+            //group the messages *sent back to back in the same timeframe by the same user* by joinig the new message text with new line
             lastMessage.message =
               lastMessage.message + "\n" + notificationEvent.message;
-            return [...oldMessages];
+            return [...oldMessages]; // don't make this "return oldMessages;" this is to trigger the useEffect for scroll bottom and get over showing the last prev state do
           } else {
             return [...oldMessages, notificationEvent];
           }
@@ -3430,17 +2991,6 @@ function AntMedia(props) {
           notificationEvent.senderStreamName,
           notificationEvent.reaction,
           allParticipants
-        );
-      } else if (
-        eventType === "RAISE_HAND" &&
-        notificationEvent.senderStreamId !== publishStreamId
-      ) {
-        showRaiseHand(
-          notificationEvent.streamId,
-          notificationEvent.senderStreamName,
-          notificationEvent.isRaised,
-          allParticipants,
-          notificationEvent.senderName // Fixed potential senderName undefined issue
         );
       } else if (eventType === "TURN_YOUR_CAM_OFF") {
         if (publishStreamId === notificationEvent.streamId) {
@@ -3462,168 +3012,50 @@ function AntMedia(props) {
           updateVideoSendResolution(true);
         }
       } else if (eventType === "UNPIN_USER") {
+        console.log("Line 2479");
+        unpinVideo(true);
         if (notificationEvent.streamId === publishStreamId && !isScreenShared) {
           updateVideoSendResolution(false);
         }
-      } else if (eventType === "SCREEN_SHARED_ON") {
-        if (!eventStreamId) {
-          console.error(
-            "Missing streamId for SCREEN_SHARED_ON:",
-            notificationEvent
-          );
-          return;
-        }
-        setAllParticipants((prev) => ({
-          ...prev,
-          [eventStreamId]: {
-            streamId: eventStreamId,
-            name: prev[eventStreamId]?.name || "Screen Share",
-            parsedMetaData: { isScreenShared: true },
-            status: "livestream",
-          },
-        }));
-      } else if (eventType === "FILE_RECEIVED") {
-        console.log("File received", notificationEvent.fileName);
-
-        if (notificationEvent.senderId === publishStreamId) {
-          // Prevent echoing your own messages
-          return;
-        }
-
-        // ✅ Skip incomplete/duplicate file messages (missing important metadata)
-        if (
-          !notificationEvent.fileName ||
-          !notificationEvent.fileContent ||
-          !notificationEvent.fileType ||
-          !notificationEvent.fileSize
-        ) {
-          console.warn("Skipped incomplete file message:", notificationEvent);
-          return;
-        }
-
-        // 👇 Format timestamp properly
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        notificationEvent.date = new Date(
-          notificationEvent?.date
-        ).toLocaleString(getLang(), {
-          timeZone: timezone,
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-
-        // 👇 Notify user
-        if (!messageDrawerOpen) {
-          enqueueSnackbar(`📎 ${notificationEvent.fileName}`, {
-            sender: notificationEvent.name,
-            variant: "file",
-            onClick: () => {
-              handleMessageDrawerOpen(true);
-              setNumberOfUnReadMessages(0);
-            },
-            autoHideDuration: 5000,
-            anchorOrigin: { vertical: "top", horizontal: "right" },
-          });
-
-          setNumberOfUnReadMessages((numb) => numb + 1);
-        }
-
-        // 👇 Add to chat/messages list
-        setMessages((oldMessages) => [...oldMessages, notificationEvent]);
-      } else if (eventType === "FILE_RECEIVED_CHUNK") {
-        const { fileName, data, senderId } = notificationEvent;
-        const key = `${senderId}_${fileName}`;
-
-        if (!receivedFileBuffers[key]) {
-          receivedFileBuffers[key] = [];
-        }
-
-        receivedFileBuffers[key].push(data);
-      } else if (eventType === "FILE_RECEIVED_END") {
-        const { fileName, fileType, fileSize, senderId } = notificationEvent;
-        const key = `${senderId}_${fileName}`;
-        const base64Chunks = receivedFileBuffers[key];
-
-        if (!base64Chunks || base64Chunks.length === 0) {
-          console.warn("No chunks received for file:", fileName);
-          return;
-        }
-
-        const base64String = base64Chunks.join("");
-        const binary = atob(base64String);
-        const len = binary.length;
-        const bytes = new Uint8Array(len);
-
-        for (let i = 0; i < len; i++) {
-          bytes[i] = binary.charCodeAt(i);
-        }
-
-        const blob = new Blob([bytes], { type: fileType });
-
-        console.log("✅ File reconstructed and downloaded:", fileName);
-
-        // Clean up buffer
-        delete receivedFileBuffers[key];
-
-        // 👇 Add reconstructed file to messages with base64 content
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        const timestamp = new Date().toLocaleString(getLang(), {
-          timeZone: timezone,
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-
-        setMessages((oldMessages) => [
-          ...oldMessages,
-          {
-            eventType: "FILE_RECEIVED",
-            fileName,
-            fileType,
-            fileSize,
-            fileContent: base64String, // 🔥 Add this!
-            name: notificationEvent.name || senderId,
-            date: timestamp,
-            senderId,
-          },
-        ]);
-      } else if (eventType === "SCREEN_SHARED_OFF") {
-        if (!eventStreamId) {
-          console.error(
-            "Missing streamId for SCREEN_SHARED_OFF:",
-            notificationEvent
-          );
-          return;
-        }
-        setAllParticipants((prev) => {
-          const updated = { ...prev };
-          delete updated[eventStreamId];
-          return updated;
-        });
-        setVideoTrackAssignments((prev) =>
-          prev.filter((track) => track.streamId !== eventStreamId)
-        );
-        unpinVideo(false);
       } else if (eventType === "VIDEO_TRACK_ASSIGNMENT_LIST") {
-        let receivedVideoTrackAssignments = notificationEvent.payload || [];
+        // There are 2 operations here:
+        // 1. VTA available in both sides -> Update
+        // 2. VTA available in the current state but not in the new list -> Remove
+        // We don't need to add new VTA because it will be added by the handlePlayVideo function
+
+        let receivedVideoTrackAssignments = notificationEvent.payload;
+
         console.info(
           "VIDEO_TRACK_ASSIGNMENT_LIST -> ",
           JSON.stringify(receivedVideoTrackAssignments)
         );
 
+        // Remove empty trackId assignments
+        //receivedVideoTrackAssignments = receivedVideoTrackAssignments.filter((vta) => vta.trackId !== "");
+
         let currentVideoTrackAssignments = [...videoTrackAssignments];
+
         let tempVideoTrackAssignmentsNew = [];
+
         let tempAllParticipants = { ...allParticipants };
 
+        // This function checks the case 1 and case 2
         currentVideoTrackAssignments.forEach((tempVideoTrackAssignment) => {
-          let assignment = receivedVideoTrackAssignments.find(
-            (videoTrackAssignment) =>
+          let assignment;
+
+          receivedVideoTrackAssignments.forEach((videoTrackAssignment) => {
+            if (
               tempVideoTrackAssignment.videoLabel ===
               videoTrackAssignment.videoLabel
-          );
+            ) {
+              assignment = videoTrackAssignment;
+            }
+          });
 
           if (
             tempVideoTrackAssignment.isMine ||
             tempVideoTrackAssignment.isFake ||
-            assignment
+            !isNull(assignment)
           ) {
             if (
               isVideoLabelExists(
@@ -3632,7 +3064,7 @@ function AntMedia(props) {
               )
             ) {
               console.error(
-                "Video label already exists: " +
+                "Video label is already exist: " +
                   tempVideoTrackAssignment.videoLabel
               );
             } else {
@@ -3647,6 +3079,7 @@ function AntMedia(props) {
 
         currentVideoTrackAssignments = [...tempVideoTrackAssignmentsNew];
 
+        // update participants according to current assignments
         receivedVideoTrackAssignments.forEach((vta) => {
           let existingAssignment = currentVideoTrackAssignments.find(
             (oldVTA) => oldVTA.videoLabel === vta.videoLabel
@@ -3661,26 +3094,33 @@ function AntMedia(props) {
         });
 
         checkScreenSharingStatus();
+
+        // check if there is any difference between old and new assignments
+        //if (!_.isEqual(currentVideoTrackAssignments, videoTrackAssignments)) {
         setVideoTrackAssignments(currentVideoTrackAssignments);
         requestSyncAdministrativeFields();
         setParticipantUpdated(!participantUpdated);
+        //}
       } else if (eventType === "AUDIO_TRACK_ASSIGNMENT") {
         clearInterval(timeoutRef.current);
         timeoutRef.current = setTimeout(() => {
           talkers.current = [];
         }, 1000);
+        //console.log(JSON.stringify(notificationEvent.payload));
         updateTalkers(notificationEvent);
       } else if (eventType === "TRACK_LIST_UPDATED") {
         console.info("TRACK_LIST_UPDATED -> ", obj);
         webRTCAdaptor?.getSubtrackCount(roomName, null, null);
       } else if (eventType === "UPDATE_PARTICIPANT_ROLE") {
         console.log("UPDATE_PARTICIPANT_ROLE -> ", obj);
+
         console.log(
           "UPDATE_PARTICIPANT_ROLE is received by " + publishStreamId
         );
 
         let updatedParticipant = allParticipants[notificationEvent.streamId];
-        if (!updatedParticipant) {
+
+        if (isNull(updatedParticipant)) {
           console.warn(
             "Cannot find broadcast object for streamId: " +
               notificationEvent.streamId,
@@ -3752,6 +3192,7 @@ function AntMedia(props) {
             t("Your request to become a speaker is approved")
           );
           mediaConstraints = {
+            // setting constraints here breaks source switching on firefox.
             video: videoQualityConstraints.video,
             audio: audioQualityConstraints.audio,
           };
@@ -3767,11 +3208,7 @@ function AntMedia(props) {
             t("Your request to become a speaker is rejected")
           );
         }
-      } else {
-        console.warn("Unhandled eventType:", eventType, notificationEvent);
       }
-    } catch (error) {
-      console.error("Error in handleNotificationEvent:", error, obj);
     }
   }
 
@@ -3971,22 +3408,18 @@ function AntMedia(props) {
     handleLeaveFromRoom();
   });
 
-  const handleSendNotificationEvent = (eventType, publishStreamId, info) => {
-    console.log("line 3327 ", streamName);
-
-    let notEvent = {
-      streamId: publishStreamId,
-      eventType: eventType,
-      senderName: streamName,
-      ...(info
-        ? info
-        : {
-            senderName: streamName,
-          }),
-    };
-    console.info("send notification event", notEvent);
-    webRTCAdaptor?.sendData(publishStreamId, JSON.stringify(notEvent));
-  };
+  const handleSendNotificationEvent = React.useCallback(
+    (eventType, publishStreamId, info) => {
+      let notEvent = {
+        streamId: publishStreamId,
+        eventType: eventType,
+        ...(info ? info : {}),
+      };
+      console.info("send notification event", notEvent);
+      webRTCAdaptor?.sendData(publishStreamId, JSON.stringify(notEvent));
+    },
+    [webRTCAdaptor]
+  );
 
   function updateVideoSendResolution(isPinned) {
     let promise = null;
@@ -4467,57 +3900,6 @@ function AntMedia(props) {
     ]
   );
 
-  //   const [handRaised, setHandRaised] = useState(false);
-
-  //   const sendRaiseHand = React.useCallback(
-  //     (isRaised) => {
-  //       const raiseHandStreamId = isPlayOnly ? roomName : publishStreamId;
-  //       console.log("line 3884",streamName, publishStreamId );
-
-  //       handleSendNotificationEvent("RAISE_HAND", raiseHandStreamId, {
-  //         isRaised: isRaised,
-  //         senderStreamId: publishStreamId,
-  //         senderStreamName: streamName,
-  //       });
-
-  //       // Optional: show floating indicator to yourself
-  //       showRaiseHand(publishStreamId, streamName, isRaised, allParticipants);
-  //     },
-  //     [
-  //       handleSendNotificationEvent,
-  //       publishStreamId,
-  //       streamName,
-  //       isPlayOnly,
-  //       roomName,
-  //     ]
-  //   );
-
-  const showRaiseHand = React.useCallback(
-    (streamId, streamName, isRaised, allParticipants, senderName) => {
-      const label = isRaised ? "✋" : "🖐️ (lowered)";
-      console.log("line 3824", senderName);
-
-      if (streamId === publishStreamId) {
-        streamName = "You";
-      }
-
-      floating({
-        content:
-          "<div>" +
-          label +
-          '<br><span style="background-color: darkgray;color: white;padding: 1px 2px;text-align: center;border-radius: 5px;font-size: 0.675em;">' +
-          senderName +
-          "</span></div>",
-        number: 1,
-        duration: 5,
-        repeat: 1,
-        direction: "normal",
-        size: 2,
-      });
-    },
-    [publishStreamId]
-  );
-
   const toggleMic = (mute) => {
     if (mute) {
       muteLocalMic();
@@ -4607,7 +3989,7 @@ function AntMedia(props) {
     );
 
     if (!_.isEqual(pagedParticipants, tempPagedParticipants)) {
-      setPagedParticipants(tempPagedParticipants);
+    //   setPagedParticipants(tempPagedParticipants);
     }
   }, [allParticipants]);
 
@@ -4712,7 +4094,7 @@ function AntMedia(props) {
   }
 
   /* istanbul ignore next */
-  return !initialized ? (
+  return !initialized && isAuthenticated ? (
     <>
       <Grid
         container
@@ -4751,7 +4133,6 @@ function AntMedia(props) {
             messageDrawerOpen,
             participantListDrawerOpen,
             messages,
-            handleFileUpload,
             numberOfUnReadMessages,
             participantUpdated,
             allParticipants,
@@ -4795,6 +4176,7 @@ function AntMedia(props) {
             handleSendNotificationEvent,
             handleSetDesiredTileCount,
             handleSendMessage,
+            handleFileUpload,
             turnOffYourMicNotification,
             addFakeParticipant,
             removeFakeParticipant,
@@ -4977,14 +4359,9 @@ function AntMedia(props) {
             <LeftTheRoom
               withError={leaveRoomWithError}
               handleLeaveFromRoom={() => handleLeaveFromRoom()}
-              handleRejoin={handleRejoin}
             />
           ) : waitingOrMeetingRoom === "waiting" ? (
             <WaitingRoom
-              onCancel={() => {
-                setIsAuthenticated(false);
-                sessionStorage.removeItem("isAuthenticated");
-              }}
               isPlayOnly={isPlayOnly}
               initialized={initialized}
               localVideoCreate={(tempLocalVideo) =>
@@ -5058,8 +4435,7 @@ function AntMedia(props) {
           ) : (
             <>
               <MeetingRoom
-                publishStreamId={publishStreamId}
-                handleSendNotificationEvent={handleSendNotificationEvent}
+              pagedParticipants={pagedParticipants}
                 messageDrawerOpen={messageDrawerOpen}
                 participantListDrawerOpen={participantListDrawerOpen}
                 effectsDrawerOpen={effectsDrawerOpen}
@@ -5074,7 +4450,7 @@ function AntMedia(props) {
                 setMuteParticipantDialogOpen={(open) =>
                   setMuteParticipantDialogOpen(open)
                 }
-                streamId={publishStreamId}
+                publishStreamId={publishStreamId}
                 pinVideo={pinVideo}
                 unpinVideo={unpinVideo}
                 pinFirstVideo={pinFirstVideo}
@@ -5168,12 +4544,11 @@ function AntMedia(props) {
                 currentPinInfo={currentPinInfo}
               />
               <MessageDrawer
-                streamName={streamName}
                 messages={messages}
                 sendMessage={(message) => handleSendMessage(message)}
+                uploadFile={(file) => handleFileUpload(file)}
                 handleSetMessages={(messages) => handleSetMessages(messages)}
                 messageDrawerOpen={messageDrawerOpen}
-                uploadFile={(file) => handleFileUpload(file)}
                 handleMessageDrawerOpen={(open) =>
                   handleMessageDrawerOpen(open)
                 }

@@ -25,7 +25,7 @@ function TimeZone({ isBroadcasting }) {
           <Typography color="#FF0000" variant="h6">
             Live
           </Typography>) : null}
-    <Typography color={theme.palette.text.primary} variant="h6">
+    <Typography color="white" variant="h6">
       {currentTime}
     </Typography>
     </div>

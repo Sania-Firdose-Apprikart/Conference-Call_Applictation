@@ -46,132 +46,160 @@ function calculateLayout(
 }
 
 function LayoutTiled(props) {
-
   const aspectRatio = 16 / 9;
-  const [cardWidth, setCardWidth] = React.useState(500*aspectRatio);
+  const [cardWidth, setCardWidth] = React.useState(500 * aspectRatio);
   const [cardHeight, setCardHeight] = React.useState(500);
 
   React.useEffect(() => {
-    const videoCount = props?.videoTrackAssignments.length+1
+    const videoCount = props?.videoTrackAssignments.length + 1;
 
-
-    const {width, height} = calculateLayout(
-        props.width,
-        props.height,
-        videoCount,
-        aspectRatio
+    const { width, height } = calculateLayout(
+      props.width,
+      props.height,
+      videoCount,
+      aspectRatio
     );
 
     setCardWidth(width - 8);
     setCardHeight(height - 8);
 
     //console.log("***** W:"+cardWidth+" H:"+cardHeight+" props.width:"+props.width+" width:"+width+" cols:"+cols+" vc:"+videoCount);
-  }, [props?.videoTrackAssignments, props.width, props.height, props?.participantUpdated]);
+  }, [
+    props?.videoTrackAssignments,
+    props.width,
+    props.height,
+    props?.participantUpdated,
+  ]);
 
-  const showOthers = Object.keys(props?.allParticipants).length > props?.globals.desiredTileCount;
+  const showOthers =
+    Object.keys(props?.allParticipants).length >
+    props?.globals.desiredTileCount;
   let trackCount = props?.globals.desiredTileCount - 1; //remove you
   props?.updateMaxVideoTrackCount(showOthers ? trackCount - 1 : trackCount); //remove others if we show
 
   const playingParticipantsCount = props?.videoTrackAssignments.length;
-  const playingParticipants = props?.videoTrackAssignments.slice(0, playingParticipantsCount);
+  const playingParticipants = props?.videoTrackAssignments.slice(
+    0,
+    playingParticipantsCount
+  );
 
   const videoCards = () => {
     return (
       <>
-        {
-          playingParticipants.map((element, index) => {
-            let isPlayOnly
-            try {
-              isPlayOnly = JSON.parse(props?.allParticipants[element?.streamId]?.metaData)?.isPlayOnly;
-            } catch (e) {
-              isPlayOnly = false;
-            }
+        {playingParticipants.map((element, index) => {
+          let isPlayOnly;
+          try {
+            isPlayOnly = JSON.parse(
+              props?.allParticipants[element?.streamId]?.metaData
+            )?.isPlayOnly;
+          } catch (e) {
+            isPlayOnly = false;
+          }
 
-            let participantName = props?.allParticipants[element?.streamId]?.name;
+          let participantName = props?.allParticipants[element?.streamId]?.name;
 
-            if (participantName === "" || typeof participantName === 'undefined' || isPlayOnly || participantName === "Anonymous") {
-              return null;
-            }
+          if (
+            participantName === "" ||
+            typeof participantName === "undefined" ||
+            isPlayOnly ||
+            participantName === "Anonymous"
+          ) {
+            return null;
+          }
 
-            //console.log("cw:"+cardWidth+" ch:"+cardHeight);
-            /* istanbul ignore next */
-            return (
+          //console.log("cw:"+cardWidth+" ch:"+cardHeight);
+          /* istanbul ignore next */
+          return (
+            <div
+              className="single-video-container not-pinned"
+              key={index}
+              style={{
+                width: cardWidth + "px",
+                height: cardHeight + "px",
+              }}
+            >
               <div
-                  className="single-video-container not-pinned"
-                  key={index}
-                  style={{
-                    width: cardWidth + "px",
-                    height: cardHeight + "px",
-                  }}
+                style={{ position: "relative", width: "100%", height: "100%" }}
               >
-                <div style={{position: "relative", width: "100%", height: "100%"}}>
-                  <TalkingIndicator
-                      trackAssignment={element}
-                      isTalking={props?.isTalking}
-                      streamId={element.streamId}
-                      talkers={props?.talkers}
-                      setAudioLevelListener={props?.setAudioLevelListener}
-                  />
-                  <VideoCard
-                      trackAssignment={element}
-                      autoPlay
-                      name={participantName}
-                      streamName={props?.streamName}
-                      isPublished={props?.isPublished}
-                      isPlayOnly={props?.isPlayOnly}
-                      isMyMicMuted={props?.isMyMicMuted}
-                      isMyCamTurnedOff={props?.isMyCamTurnedOff}
-                      allParticipants={props?.allParticipants}
-                      setParticipantIdMuted={(participant) => props?.setParticipantIdMuted(participant)}
-                      turnOnYourMicNotification={(streamId) =>props?.turnOnYourMicNotification(streamId)}
-                      turnOffYourMicNotification={(streamId) =>props?.turnOffYourMicNotification(streamId)}
-                      turnOffYourCamNotification={(streamId) =>props?.turnOffYourCamNotification(streamId)}
-                      pinVideo={props?.pinVideo}
-                      isAdmin={props?.isAdmin}
-                      publishStreamId={props?.publishStreamId}
-                      localVideo={props?.localVideo}
-                      localVideoCreate={(tempLocalVideo) => props?.localVideoCreate(tempLocalVideo)}
-                  />
-                </div>
+                <TalkingIndicator
+                  trackAssignment={element}
+                  isTalking={props?.isTalking}
+                  streamId={element.streamId}
+                  talkers={props?.talkers}
+                  setAudioLevelListener={props?.setAudioLevelListener}
+                />
+                <VideoCard
+                  trackAssignment={element}
+                  autoPlay
+                  name={participantName}
+                  streamName={props?.streamName}
+                  isPublished={props?.isPublished}
+                  isPlayOnly={props?.isPlayOnly}
+                  isMyMicMuted={props?.isMyMicMuted}
+                  isMyCamTurnedOff={props?.isMyCamTurnedOff}
+                  allParticipants={props?.allParticipants}
+                  setParticipantIdMuted={(participant) =>
+                    props?.setParticipantIdMuted(participant)
+                  }
+                  turnOnYourMicNotification={(streamId) =>
+                    props?.turnOnYourMicNotification(streamId)
+                  }
+                  turnOffYourMicNotification={(streamId) =>
+                    props?.turnOffYourMicNotification(streamId)
+                  }
+                  turnOffYourCamNotification={(streamId) =>
+                    props?.turnOffYourCamNotification(streamId)
+                  }
+                  pinVideo={props?.pinVideo}
+                  isAdmin={props?.isAdmin}
+                  publishStreamId={props?.publishStreamId}
+                  localVideo={props?.localVideo}
+                  localVideoCreate={(tempLocalVideo) =>
+                    props?.localVideoCreate(tempLocalVideo)
+                  }
+                />
               </div>
-              )
-          })
-        }
+            </div>
+          );
+        })}
       </>
     );
-  }
+  };
 
   const othersCard = () => {
     return (
       <>
         {showOthers ? (
-              <div
-                  className="single-video-container not-pinned others-tile-wrapper"
-                  style={{
-                    width: cardWidth + "px",
-                    height: cardHeight + "px",
-                    maxWidth: cardWidth + "px",
-                  }}
-              >
-                <OthersCard
-                    publishStreamId={props?.publishStreamId}
-                    allParticipants={props?.allParticipants}
-                    playingParticipants = {playingParticipants}
-                />
-              </div>
-            ) : null
-        }
+          <div
+            className="single-video-container not-pinned others-tile-wrapper"
+            style={{
+              width: cardWidth + "px",
+              height: cardHeight + "px",
+              maxWidth: cardWidth + "px",
+            }}
+          >
+            <OthersCard
+              publishStreamId={props?.publishStreamId}
+              allParticipants={props?.pagedParticipants}
+              playingParticipants={playingParticipants}
+            />
+          </div>
+        ) : null}
       </>
     );
-  }
+  };
 
   return (
-      <>
-        {props?.videoTrackAssignments.length === 0 ? <p>{process.env.REACT_APP_PLAY_ONLY_ROOM_EMPTY_MESSAGE}</p> : null}
-        {videoCards()}
-        {process.env.REACT_APP_LAYOUT_OTHERS_CARD_VISIBILITY === 'true' ? othersCard() : null}
-      </>
-    )
-};
+    <>
+      {props?.videoTrackAssignments.length === 0 ? (
+        <p>{process.env.REACT_APP_PLAY_ONLY_ROOM_EMPTY_MESSAGE}</p>
+      ) : null}
+      {videoCards()}
+      {process.env.REACT_APP_LAYOUT_OTHERS_CARD_VISIBILITY === "true"
+        ? othersCard()
+        : null}
+    </>
+  );
+}
 
 export default LayoutTiled;

@@ -163,6 +163,7 @@ const MeetingRoom = React.memo((props) => {
       <div id="meeting-gallery" style={{ height: "calc(100vh - 80px)" }}>
         {pinLayout ? (
           <LayoutPinned
+            pagedParticipants={props?.pagedParticipants}
             pinnedParticipant={pinnedParticipant}
             width={gallerySize.w}
             height={gallerySize.h}
@@ -190,6 +191,7 @@ const MeetingRoom = React.memo((props) => {
           />
         ) : (
           <LayoutTiled
+            pagedParticipants={props?.pagedParticipants}
             width={gallerySize.w}
             height={gallerySize.h}
             videoTrackAssignments={props?.videoTrackAssignments}

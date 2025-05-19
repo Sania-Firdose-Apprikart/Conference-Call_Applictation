@@ -158,7 +158,7 @@ function ParticipantTab({
       </div>
     );
   }
-  const getParticipantItem = (streamId, name, assignedVideoCardId) => {
+  const getParticipantItem = (streamId, name, assignedVideoCardId,publishStreamId ,ogStreamId) => {
     if (streamId === publishStreamId) {
       assignedVideoCardId = "localVideo";
     }
@@ -182,7 +182,7 @@ function ParticipantTab({
                 textOverflow: "ellipsis",
                 display: "block"
               }}
-          >{name}</ParticipantName>
+          >{name}{ogStreamId === publishStreamId ? " (You)" : ""}</ParticipantName>
         </Grid>
         <Grid item>
           <div style={{display: 'flex'}}>
@@ -239,6 +239,8 @@ function ParticipantTab({
         <Grid container>
           <SvgIcon size={28} name="participants" color={theme.palette?.participantListIcon?.primary}/>
           <ParticipantName
+
+
             variant="body2"
             style={{marginLeft: 4, fontWeight: 500}}
           >
@@ -247,13 +249,15 @@ function ParticipantTab({
         </Grid>
         <Stack id="participant-scroll" style={{flexWrap: 'nowrap', flex: 'auto', overflowY: 'scroll'}} 
           ref={scrollContainerRef} onScroll={handleScroll} spacing={2}>
-          {getParticipantItem(publishStreamId, "You")}
+          {/* {getParticipantItem(publishStreamId, "You")} */}
           {Object.entries(pagedParticipants).map(([streamId, broadcastObject]) => {
+            console.log("stream id 254", broadcastObject);
+            
             if (publishStreamId !== streamId) {
               let assignedVideoCardId = videoTrackAssignments?.find(vta => vta.streamId === streamId)?.videoLabel;
-              return getParticipantItem(streamId, broadcastObject.name, assignedVideoCardId);
-            } 
-          })}
+              return getParticipantItem(streamId, broadcastObject.name, assignedVideoCardId, publishStreamId, broadcastObject.streamId);
+            } 
+          })}
         </Stack>
       </Stack>
     </Grid>
