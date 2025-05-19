@@ -1,7 +1,15 @@
 import React, { useState, useCallback } from "react";
 import { alpha, styled } from "@mui/material/styles";
 import DummyCard from "./DummyCard";
-import { Grid, Typography, useTheme, Box, Tooltip, Fab } from "@mui/material";
+import {
+  Grid,
+  Typography,
+  useTheme,
+  Box,
+  Tooltip,
+  Fab,
+  backdropClasses,
+} from "@mui/material";
 import { SvgIcon } from "../SvgIcon";
 import { useTranslation } from "react-i18next";
 import { isMobile, isTablet } from "react-device-detect";
@@ -329,6 +337,7 @@ function VideoCard(props) {
       position: "relative",
       borderRadius: 4,
       overflow: "hidden",
+      backgroundColor: "black",
     }),
     [props.isMobileView]
   );
