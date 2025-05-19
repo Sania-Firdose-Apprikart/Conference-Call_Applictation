@@ -337,7 +337,7 @@ function VideoCard(props) {
       position: "relative",
       borderRadius: 4,
       overflow: "hidden",
-      backgroundColor: "black",
+      backgroundColor: "black !important" ,
     }),
     [props.isMobileView]
   );
