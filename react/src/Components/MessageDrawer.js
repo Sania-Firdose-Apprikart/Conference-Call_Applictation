@@ -87,6 +87,7 @@ return (
             <MessageInput
             streamName={props?.streamName}
                 handleSendMessage={(message) => props?.sendMessage(message)}
+                handleSendFile = {(file)=>props?.sendFile(file)}
                 handleSetMessages={(messages) => props?.handleSetMessages(messages)}
                 handleFileUpload={(file) => props?.uploadFile(file)}
             />

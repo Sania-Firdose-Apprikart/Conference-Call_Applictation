@@ -34,7 +34,7 @@ const CustomizedAvatarGroup = styled(AvatarGroup)(({ theme }) => ({
 
 function OthersCard({ allParticipants, publishStreamId, playingParticipants }) {
   const theme = useTheme();
-  console.log("playingParticipants:", playingParticipants);
+  // console.log("playingParticipants:", playingParticipants);
   
   // 1. Build a list of “extra” participants (streamId + name)
   const extraParticipants = Object.entries(allParticipants)
@@ -50,7 +50,7 @@ function OthersCard({ allParticipants, publishStreamId, playingParticipants }) {
 
   // 2. How many extras are there?
   // const othersCount = extraParticipants.length;
-    console.log("line 53", allParticipants, playingParticipants)
+    // console.log("line 53", allParticipants, playingParticipants)
   const othersCount = allParticipants.length - playingParticipants.length
   return (
     <div

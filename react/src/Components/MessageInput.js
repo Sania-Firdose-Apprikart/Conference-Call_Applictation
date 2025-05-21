@@ -49,7 +49,13 @@ const FilePreviewContainer = styled(Paper)(({ theme }) => ({
 }));
 
 const MessageInput = React.memo(
-  ({ streamName, handleSendMessage, handleSetMessages, handleFileUpload }) => {
+  ({
+    streamName,
+    handleSendMessage,
+    handleSetMessages,
+    handleFileUpload,
+    handleSendFile,
+  }) => {
     const { id } = useParams();
     const { t } = useTranslation();
     const [text, setText] = useState("");
@@ -58,10 +64,23 @@ const MessageInput = React.memo(
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [fileEndPoint, setFileEndPoint] = useState([]);
+    const [file, setFile] = useState({
+      name: "",
+      path: "",
+    });
 
     const uploadFileToAPI = async (event) => {
       const uploadedFile = event.target.files[0];
       console.log("File :", uploadedFile);
+      // let obj = {...file};
+      // obj = {...obj, name:uploadedFile.name}
+      // setFile((prev)=>{./..prev, name:uploadedFile.name})
+      setFile((prev) => ({
+        ...prev,
+        name: uploadedFile.name,
+        size: uploadedFile.size
+      }));
+      // setFile({ name:uploadedFile.name})
       if (!uploadedFile) return;
       const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB in bytes
       if (uploadedFile.size > MAX_FILE_SIZE) {
@@ -76,7 +95,7 @@ const MessageInput = React.memo(
         formData.append("user_type", "customer"); // replace dynamically if needed
         formData.append("file", uploadedFile);
         const response = await fetch(
-          "https://kia.apprikart.com/kandid_api/v1/upload_vc_file/",
+          "https://videoserver.apprikart.com/kia_vc_api/v1/upload_vc_file/",
           {
             method: "POST",
             body: formData,
@@ -85,8 +104,13 @@ const MessageInput = React.memo(
         // setFileEndPoint("http://kia.apprikart.com" + response.file);
         // sendMessage(fileEndPoint);
         const data = await response.json(); // Parse JSON response
-        const endpoint = "https://kia.apprikart.com" + data.file;
-        setFileEndPoint(endpoint)
+        // const endpoint = "https://kia.apprikart.com" + data.file;
+        const endpoint = data.file;
+        setFileEndPoint(endpoint);
+        setFile((prev) => ({
+          ...prev,
+          path: endpoint,
+        }));
         // Adjust based on actual response structure
         if (typeof endpoint !== "string") {
           console.error("Invalid file endpoint:", endpoint);
@@ -95,64 +119,26 @@ const MessageInput = React.memo(
         // sendMessage(endpoint);
       } catch (error) {
         console.error("🚨 Upload failed:", error);
-      }
-      finally {
+      } finally {
         setIsLoading(false); // Stop loading
       }
     };
 
-    //   console.log("sendMessage");
-    //   const currentDate = new Date().toISOString();
-    //   if (text || fileURL) {
-    //     handleSendMessage(text);
-    //     handleSetMessages({
-    //       name: "You",
-    //       message: text || fileURL,
-    //       date: new Date().toLocaleString(),
-    //       type: "text_message",
-    //     });
-    //     setShowEmojiPicker(false);
-    //     setText("");
-    //   } else if (files.length > 0) {
-    //     console.log("file triggered");
-
-    //     const MAX_FILE_SIZE = 25 * 1024 * 1024;
-    //     console.log("Actual file size (bytes):", files[0].size);
-    //     if (files[0].size > MAX_FILE_SIZE) {
-    //       alert("File size exceeds 25MB limit.");
+    // const sendMessage = (fileURL = null) => {
+    //   if (text || fileEndPoint || fileEndPoint.length > 0) {
+    //     const message = fileEndPoint.length > 0 || text;
+    //     // Ensure message is a string
+    //     console.log("message 107",message)
+    //     console.log("text 108",text)
+    //     console.log("fileEndPoint 109",fileEndPoint)
+    //     if (typeof message !== "string") {
+    //       console.error("Invalid message type:", message);
     //       return;
     //     }
-    //     handleFileUpload(files);
-    //     // handleSetMessages({
-    //     //   name: "You",
-    //     //   message: text || fileURL,
-    //     //   file_content: files[0],
-    //     //   date: new Date().toLocaleString(),
-    //     //   type: "file_message",
-    //     // });
-    //     handleSetMessages({
-    //       name: "You",
-    //       message: fileURL ? fileURL : text,
-    //       date: new Date().toLocaleString(),
-    //       type: fileURL ? "file_message" : "text_message",
-    //       ...(fileURL && {
-    //         fileName: files[0]?.name,
-    //         fileSize: files[0]?.size,
-    //         fileType: files[0]?.type,
-    //       }),
-    //     });
-    //     // Clear file selection after sending
-    //     setFiles([]);
-    //     // Reset file input value in case the same file is chosen again
-    //     if (inputRef.current) inputRef.current.value = "";
-    //   }
-    // };
 
-    // const sendMessage = (fileURL = null) => {
-    //   if (text || fileURL || files.length > 0) {
     //     const messageData = {
     //       name: "You",
-    //       message: fileURL || text,
+    //       message,
     //       date: new Date().toLocaleString(),
     //       type: fileURL ? "file_message" : "text_message",
     //     };
@@ -165,17 +151,30 @@ const MessageInput = React.memo(
 
     //     handleSendMessage(messageData.message);
     //     handleSetMessages(messageData);
-
+    //     setFileEndPoint("")
     //     setShowEmojiPicker(false);
     //     setText("");
     //     setFiles([]);
     //     if (inputRef.current) inputRef.current.value = "";
     //   }
     // };
-    const sendMessage = (fileURL = null) => {
-      if (text || fileEndPoint || fileEndPoint.length > 0) {
-        const message = fileEndPoint || text;
-        // Ensure message is a string
+
+    const sendMessage = () => {
+      console.log("sendMessage called with:", { text, fileEndPoint });
+
+      // Ensure fileEndPoint is a string (not an array)
+      if (Array.isArray(fileEndPoint)) {
+        console.error("fileEndPoint is an array, resetting to empty string");
+        setFileEndPoint("");
+        return;
+      }
+
+      if (text) {
+        console.log("file path", fileEndPoint);
+        const message =  text; // Use fileEndPoint if present, otherwise text
+
+        console.log("message:", message, "type:", typeof message);
+
         if (typeof message !== "string") {
           console.error("Invalid message type:", message);
           return;
@@ -185,32 +184,40 @@ const MessageInput = React.memo(
           name: "You",
           message,
           date: new Date().toLocaleString(),
-          type: fileURL ? "file_message" : "text_message",
+          type: fileEndPoint ? "file_message" : "text_message", // Use fileEndPoint to determine type
         };
 
-        if (fileURL) {
+        if (fileEndPoint) {
           messageData.fileName = files[0]?.name;
           messageData.fileSize = files[0]?.size;
           messageData.fileType = files[0]?.type;
         }
 
+        console.log("Sending message data:", messageData);
         handleSendMessage(messageData.message);
         handleSetMessages(messageData);
-        setFileEndPoint("")
+
         setShowEmojiPicker(false);
         setText("");
         setFiles([]);
+        setFileEndPoint("");
         if (inputRef.current) inputRef.current.value = "";
+      } else if (fileEndPoint) {
+        console.log("line 205", file);
+
+        const fileData = {
+          name: "You",
+          fileName: file.name,
+          fileSize: file.size,
+          serverFilePath: file.path,
+          date: new Date().toLocaleString(),
+          type: "FILE_MESSAGE",
+        };
+        handleSendFile(fileData);
+      } else {
+        console.warn("No message or file to send");
       }
     };
-
-    // const addEmojiIntoTextBox = (emojiData, event) => {
-    //   setText(text + " " + emojiData.emoji);
-    // };
-
-    // const handleEmojiPickerDrawer = () => {
-    //   setShowEmojiPicker(!showEmojiPicker);
-    // };
 
     const removeSelectedFile = () => {
       setFiles([]);
@@ -236,7 +243,7 @@ const MessageInput = React.memo(
           {/* File Preview UI */}
           {fileEndPoint.length > 0 && (
             <FilePreviewContainer>
-              <Typography variant="body2">{fileEndPoint}</Typography>
+              <Typography variant="body2">{file.name}</Typography>
               <IconButton size="small" onClick={removeSelectedFile}>
                 <ClearIcon fontSize="small" color="black" />
               </IconButton>
@@ -260,10 +267,7 @@ const MessageInput = React.memo(
                   />
                   <IconButton onClick={() => inputRef.current.click()}>
                     {isLoading ? (
-                      <CircularProgress
-                      size={24}
-                        sx={{ color: "#000" }}
-                      />
+                      <CircularProgress size={24} sx={{ color: "#000" }} />
                     ) : (
                       <AttachFileIcon
                         sx={{ color: "#000", cursor: "pointer" }}

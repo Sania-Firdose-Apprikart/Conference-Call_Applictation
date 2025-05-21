@@ -48,6 +48,8 @@ function MessagesTab(props) {
           ))} */}
           {messages.map((message, index) => {
             const isMe = message.senderId === publishStreamId;
+            console.log("isMe", message, isMe);
+            
             const cleanName = isMe ? "You" : message.name?.split("_")[0] ?? "";
 
             return (

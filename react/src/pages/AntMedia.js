@@ -339,7 +339,7 @@ function AntMedia(props) {
   const initialRoomName = isComponentMode()
     ? getRootAttribute("data-room-name")
     : useParams().id;
-  console.log("initialRoomName line 287", initialRoomName);
+  // console.log("initialRoomName line 287", initialRoomName);
 
   const [roomName, setRoomName] = useState(initialRoomName);
 
@@ -994,7 +994,7 @@ function AntMedia(props) {
 
     // Calculate the packet loss percentage
     let packageLostPercentage = 0;
-    console.log("publishStats:", publishStats.current);
+    // console.log("publishStats:", publishStats.current);
     if (publishStats.current !== null) {
       let deltaPackageLost = oldTotalPacketsLost - totalPacketsLost;
       let deltaPackageReceived = oldPackageReceived - packageReceived;
@@ -1881,7 +1881,7 @@ function AntMedia(props) {
       checkScreenSharingStatus();
     } else if (info === "subtrackCount") {
       if (!isNull(obj.count)) {
-        console.log("subtrackCount:" + obj.count);
+        // console.log("subtrackCount:" + obj.count);
         updateParticipantCountAndList(obj.count);
       }
     } else if (info === "broadcastObject") {
@@ -1996,10 +1996,25 @@ function AntMedia(props) {
       videoTrackAssignmentsIntervalJob = null;
     } else if (info === "screen_share_stopped") {
     } else if (info === "screen_share_started") {
-    } else if (info === "data_received") {
+    }
+    // else if (info === "data_received") {
+    //   try {
+    //     handleNotificationEvent(obj);
+    //   } catch (e) {}
+    // }
+    else if (info === "data_received") {
+      // console.log("Data received:", obj);
+
       try {
-        handleNotificationEvent(obj);
-      } catch (e) {}
+        if (obj.type === "FILE_MESSAGE") {
+          console.log("File message content:", obj.data);
+          // ... your file processing code here ...
+        } else {
+          handleNotificationEvent(obj);
+        }
+      } catch (e) {
+        console.error("Error processing data_received message:", e);
+      }
     } else if (info === "available_devices") {
       setDevices(obj);
     } else if (info === "updated_stats") {
@@ -2103,7 +2118,7 @@ function AntMedia(props) {
       incomingBitrate: incomingBitrate,
       inboundRtpList: obj.inboundRtpList,
     };
-    console.log("playStats:", updatedPlayStats);
+    // console.log("playStats:", updatedPlayStats);
     playStats.current = updatedPlayStats;
   }
 
@@ -2125,7 +2140,7 @@ function AntMedia(props) {
       parseInt(obj.totalVideoPacketsSent) + parseInt(obj.totalAudioPacketsSent);
 
     let packageLostPercentage = 0;
-    console.log("publishStats:", publishStats.current);
+    // console.log("publishStats:", publishStats.current);
     if (publishStats.current !== null) {
       let deltaPackageLost = packageLost - publishStats.current.packageLost;
       let deltaPackageSent = packageSent - publishStats.current.packageSent;
@@ -2723,6 +2738,40 @@ function AntMedia(props) {
       }
     }
   }
+  function handleSendFile(file) {
+    console.log("handleSend file triggered", file);
+    const fileName = file.fileName
+    const serverFilePath = file.serverFilePath
+    
+  if (publishStreamId || isPlayOnly) {
+    let streamId = isPlayOnly ? roomName : publishStreamId;
+    let iceState = webRTCAdaptor?.iceConnectionState(streamId);
+    if (
+      iceState !== null &&
+      iceState !== "failed" &&
+      iceState !== "disconnected"
+    ) {
+      webRTCAdaptor?.sendData(
+        streamId,
+        JSON.stringify({
+          eventType: "FILE_MESSAGE",
+          fileName: fileName,
+          serverFilePath: serverFilePath,
+          name: streamName,
+          senderId: streamId,
+          date: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        })
+      );
+    } else {
+      console.error("WebRTC connection is not stable:", iceState);
+    }
+  } else {
+    console.error("No stream ID available for sending file message");
+  }
+}
 
   function handleFileUpload(files) {
     console.log("line 2225", files);
@@ -2860,7 +2909,7 @@ function AntMedia(props) {
 
   function handleNotificationEvent(obj) {
     var notificationEvent = JSON.parse(obj.data);
-    console.log("handleNotificationEvent:", notificationEvent);
+    // console.log("handleNotificationEvent:", notificationEvent);
     if (notificationEvent != null && typeof notificationEvent == "object") {
       var eventStreamId = notificationEvent.streamId;
       var eventType = notificationEvent.eventType;
@@ -2869,10 +2918,18 @@ function AntMedia(props) {
         eventType === "CAM_TURNED_OFF" ||
         eventType === "CAM_TURNED_ON" ||
         eventType === "MIC_MUTED" ||
-        eventType === "MIC_UNMUTED" ||
-        eventType === "CAM_STATUS"
+        eventType === "MIC_UNMUTED"
       ) {
         webRTCAdaptor?.getBroadcastObject(eventStreamId);
+        if (eventType === "CAM_TURNED_OFF") {
+          updateUserStatusMetadata(null, false, eventStreamId);
+        } else if (eventType === "CAM_TURNED_ON") {
+          updateUserStatusMetadata(null, true, eventStreamId);
+        } else if (eventType === "MIC_MUTED") {
+          updateUserStatusMetadata(true, null, eventStreamId);
+        } else if (eventType === "MIC_UNMUTED") {
+          updateUserStatusMetadata(false, null, eventStreamId);
+        }
       } else if (eventType === "RECORDING_TURNED_ON") {
         setIsRecordPluginActive(true);
       } else if (eventType === "RECORDING_TURNED_OFF") {
@@ -2924,65 +2981,157 @@ function AntMedia(props) {
           setNumberOfUnReadMessages((numb) => numb + 1);
         }
 
-        setMessages((oldMessages) => [...oldMessages, notificationEvent]);
-      } else if (
-        eventType === "MESSAGE_RECEIVED" ||
-        eventType === "TEXT_MESSAGE"
-      ) {
-        // if message arrives from myself or footer message button is disabled then we are not going to show it.
+        // setMessages((oldMessages) => [...oldMessages, notificationEvent]);
+      }
+
+      else if (eventType === "MESSAGE_RECEIVED") {
+        
+        // Skip if message is from self or footer message button is disabled
         if (
           notificationEvent.senderId === publishStreamId ||
           process.env.REACT_APP_FOOTER_MESSAGE_BUTTON_VISIBILITY === "false"
         ) {
           return;
         }
-        console.log("TEXT MESSAGE", notificationEvent);
+    
 
+        // Calculate scroll height for chat
         calculate_scroll_height();
+
+   
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        notificationEvent.date = new Date(
-          notificationEvent?.date
-        ).toLocaleString(getLang(), {
-          timeZone: timezone,
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-        // if message arrives.
-        // if there is an new message and user has not opened message component then we are going to increase number of unread messages by one.
-        // we are gonna also send snackbar.
+        const formattedDate =
+          notificationEvent?.date && !isNaN(new Date(notificationEvent.date))
+            ? new Date(notificationEvent.date).toLocaleString(getLang(), {
+                timeZone: timezone,
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : new Date().toLocaleString(getLang(), {
+                timeZone: timezone,
+                hour: "2-digit",
+                minute: "2-digit",
+              });
+        const messageObject = {
+          date: formattedDate,
+          eventType: notificationEvent.eventType,
+          message: notificationEvent.message,
+          name: notificationEvent.name,
+        };
+
+        // Show snackbar and increment unread count if message drawer is closed
         if (!messageDrawerOpen) {
-          enqueueSnackbar(notificationEvent.message, {
-            sender: notificationEvent.name,
-            variant: "message",
-            onClick: () => {
-              handleMessageDrawerOpen(true);
-              setNumberOfUnReadMessages(0);
-            },
-            autoHideDuration: 5000,
-            anchorOrigin: {
-              vertical: "top",
-              horizontal: "right",
-            },
-          });
+          enqueueSnackbar(
+            notificationEvent.message,
+            {
+              sender: notificationEvent.name,
+              variant: "message",
+              onClick: () => {
+                handleMessageDrawerOpen(true);
+                setNumberOfUnReadMessages(0);
+              },
+              autoHideDuration: 5000,
+              anchorOrigin: {
+                vertical: "top",
+                horizontal: "right",
+              },
+            }
+          );
           setNumberOfUnReadMessages((numb) => numb + 1);
         }
         setMessages((oldMessages) => {
-          let lastMessage = oldMessages[oldMessages.length - 1]; //this must remain mutable
-          const isSameUser =
-            lastMessage?.name === notificationEvent?.name ||
-            notificationEvent?.display_names;
-          const sentInSameTime = lastMessage?.date === notificationEvent?.date;
+          let lastMessage = oldMessages[oldMessages.length - 1];
+          const isSameUser = lastMessage?.name === messageObject.name;
+          const sentInSameTime = lastMessage?.date === messageObject.date;
 
           if (isSameUser && sentInSameTime) {
-            //group the messages *sent back to back in the same timeframe by the same user* by joinig the new message text with new line
-            lastMessage.message =
-              lastMessage.message + "\n" + notificationEvent.message;
-            return [...oldMessages]; // don't make this "return oldMessages;" this is to trigger the useEffect for scroll bottom and get over showing the last prev state do
+            console.log("Grouping messages:", {
+              lastMessage: lastMessage.message,
+              newMessage: messageObject.message,
+            });
+            lastMessage.message += `\n${messageObject.message}`;
+            // return [...oldMessages];
           } else {
-            return [...oldMessages, notificationEvent];
+            return [...oldMessages, messageObject];
           }
         });
-      } else if (
+      } 
+      else if (eventType === "FILE_MESSAGE") {
+        
+        // Skip if message is from self or footer message button is disabled
+        if (
+          notificationEvent.senderId === publishStreamId ||
+          process.env.REACT_APP_FOOTER_MESSAGE_BUTTON_VISIBILITY === "false"
+        ) {
+          return;
+        }
+    
+
+        // Calculate scroll height for chat
+        calculate_scroll_height();
+
+   
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const formattedDate =
+          notificationEvent?.date && !isNaN(new Date(notificationEvent.date))
+            ? new Date(notificationEvent.date).toLocaleString(getLang(), {
+                timeZone: timezone,
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : new Date().toLocaleString(getLang(), {
+                timeZone: timezone,
+                hour: "2-digit",
+                minute: "2-digit",
+              });
+        const fileObject = {
+          date: formattedDate,
+          eventType: notificationEvent.eventType,
+          message: notificationEvent.fileName,
+          name: notificationEvent.name,
+          filePath: notificationEvent.serverFilePath
+        };
+
+        // Show snackbar and increment unread count if message drawer is closed
+        if (!messageDrawerOpen) {
+          enqueueSnackbar(
+            notificationEvent.message,
+            {
+              sender: notificationEvent.name,
+              variant: "file",
+              onClick: () => {
+                handleMessageDrawerOpen(true);
+                setNumberOfUnReadMessages(0);
+              },
+              autoHideDuration: 5000,
+              anchorOrigin: {
+                vertical: "top",
+                horizontal: "right",
+              },
+            }
+          );
+          setNumberOfUnReadMessages((numb) => numb + 1);
+        }
+        setMessages((oldMessages) => {
+          let lastMessage = oldMessages[oldMessages?.length - 1];
+          const isSameUser = lastMessage?.name === fileObject.name;
+          const sentInSameTime = lastMessage?.date === fileObject.date;
+
+          if (isSameUser && sentInSameTime) {
+            console.log("Grouping messages:", {
+              lastMessage: lastMessage.message,
+              newMessage: fileObject.message,
+            });
+            lastMessage.message += `\n${fileObject.message}`;
+            // return [...oldMessages];
+          } else {
+            return [...oldMessages, fileObject];
+          }
+        });
+      } 
+      
+      
+      else if (
         eventType === "REACTIONS" &&
         notificationEvent.senderStreamId !== publishStreamId
       ) {
@@ -3012,7 +3161,6 @@ function AntMedia(props) {
           updateVideoSendResolution(true);
         }
       } else if (eventType === "UNPIN_USER") {
-        console.log("Line 2479");
         unpinVideo(true);
         if (notificationEvent.streamId === publishStreamId && !isScreenShared) {
           updateVideoSendResolution(false);
@@ -3025,10 +3173,10 @@ function AntMedia(props) {
 
         let receivedVideoTrackAssignments = notificationEvent.payload;
 
-        console.info(
-          "VIDEO_TRACK_ASSIGNMENT_LIST -> ",
-          JSON.stringify(receivedVideoTrackAssignments)
-        );
+        // console.info(
+        //   "VIDEO_TRACK_ASSIGNMENT_LIST -> ",
+        //   JSON.stringify(receivedVideoTrackAssignments)
+        // );
 
         // Remove empty trackId assignments
         //receivedVideoTrackAssignments = receivedVideoTrackAssignments.filter((vta) => vta.trackId !== "");
@@ -3109,14 +3257,14 @@ function AntMedia(props) {
         //console.log(JSON.stringify(notificationEvent.payload));
         updateTalkers(notificationEvent);
       } else if (eventType === "TRACK_LIST_UPDATED") {
-        console.info("TRACK_LIST_UPDATED -> ", obj);
+        // console.info("TRACK_LIST_UPDATED -> ", obj);
         webRTCAdaptor?.getSubtrackCount(roomName, null, null);
       } else if (eventType === "UPDATE_PARTICIPANT_ROLE") {
-        console.log("UPDATE_PARTICIPANT_ROLE -> ", obj);
+        // console.log("UPDATE_PARTICIPANT_ROLE -> ", obj);
 
-        console.log(
-          "UPDATE_PARTICIPANT_ROLE is received by " + publishStreamId
-        );
+        // console.log(
+        //   "UPDATE_PARTICIPANT_ROLE is received by " + publishStreamId
+        // );
 
         let updatedParticipant = allParticipants[notificationEvent.streamId];
 
@@ -3138,27 +3286,27 @@ function AntMedia(props) {
 
         updatedParticipant.role = notificationEvent.role;
 
-        console.log(
-          "UPDATE_PARTICIPANT_ROLE event received and role updated for ",
-          updatedParticipant
-        );
+        // console.log(
+        //   "UPDATE_PARTICIPANT_ROLE event received and role updated for ",
+        //   updatedParticipant
+        // );
 
         if (publishStreamId === notificationEvent.streamId) {
           setRole(notificationEvent.role);
         } else {
-          console.log(
-            "UPDATE_PARTICIPANT_ROLE event received and subtracks are queried"
-          );
+          // console.log(
+          //   "UPDATE_PARTICIPANT_ROLE event received and subtracks are queried"
+          // );
           webRTCAdaptor.getBroadcastObject(notificationEvent.streamId);
         }
         setParticipantUpdated(!participantUpdated);
       } else if (eventType === "REQUEST_BECOME_PUBLISHER") {
         if (role === WebinarRoles.Host || role === WebinarRoles.ActiveHost) {
           if (requestSpeakerList.includes(notificationEvent.senderStreamId)) {
-            console.log(
-              "Request is already received from ",
-              notificationEvent.senderStreamId
-            );
+            // console.log(
+            //   "Request is already received from ",
+            //   notificationEvent.senderStreamId
+            // );
             return;
           }
           setRequestSpeakerList((oldRequestSpeakerList) => {
@@ -3242,14 +3390,14 @@ function AntMedia(props) {
       isNull(newRole) ||
       oldRole === newRole
     ) {
-      console.log(
-        "Role update message is not displayed. Admin: ",
-        isAdmin,
-        " Old Role: ",
-        oldRole,
-        " New Role: ",
-        newRole
-      );
+      // console.log(
+      //   "Role update message is not displayed. Admin: ",
+      //   isAdmin,
+      //   " Old Role: ",
+      //   oldRole,
+      //   " New Role: ",
+      //   newRole
+      // );
       return;
     }
 
@@ -3296,12 +3444,12 @@ function AntMedia(props) {
           currentPinInfo.streamId,
           true
         );
-        console.log(
-          currentPinInfo.videoLabel +
-            " will be assigned to " +
-            currentPinInfo.streamId +
-            " (retry)"
-        );
+        // console.log(
+        //   currentPinInfo.videoLabel +
+        //     " will be assigned to " +
+        //     currentPinInfo.streamId +
+        //     " (retry)"
+        // );
       }
     }
 
@@ -3320,7 +3468,7 @@ function AntMedia(props) {
       }
     });
 
-    console.log("lastlySharedScreen:" + lastlySharedScreen);
+    // console.log("lastlySharedScreen:" + lastlySharedScreen);
 
     if (!isNull(lastlySharedScreen)) {
       console.log("currentPinInfo:", currentPinInfo);
@@ -3361,13 +3509,10 @@ function AntMedia(props) {
     [webRTCAdaptor, roomName]
   );
 
-  function updateUserStatusMetadata(micMuted, cameraOn) {
+  function updateUserStatusMetadata(micMuted, cameraOn, streamId) {
     let metadata = getUserStatusMetadata(micMuted, cameraOn, false);
 
-    webRTCAdaptor?.updateStreamMetaData(
-      publishStreamId,
-      JSON.stringify(metadata)
-    );
+    webRTCAdaptor?.updateStreamMetaData(streamId, JSON.stringify(metadata));
   }
 
   function handleLeaveFromRoom() {
@@ -3500,10 +3645,10 @@ function AntMedia(props) {
       allParticipantsTemp[publishStreamId] = allParticipants[publishStreamId];
     }
     if (!_.isEqual(allParticipantsTemp, allParticipants)) {
-      console.log(
-        "removeAllRemoteParticipants setAllParticipants:" +
-          JSON.stringify(allParticipantsTemp)
-      );
+      // console.log(
+      //   "removeAllRemoteParticipants setAllParticipants:" +
+      //     JSON.stringify(allParticipantsTemp)
+      // );
       setAllParticipants(allParticipantsTemp);
     }
     setParticipantUpdated(!participantUpdated);
@@ -3541,10 +3686,10 @@ function AntMedia(props) {
     };
 
     if (!_.isEqual(allParticipantsTemp, allParticipants)) {
-      console.log(
-        "addMeAsParticipant setAllParticipants:" +
-          JSON.stringify(allParticipantsTemp)
-      );
+      // console.log(
+      //   "addMeAsParticipant setAllParticipants:" +
+      //     JSON.stringify(allParticipantsTemp)
+      // );
       setAllParticipants(allParticipantsTemp);
       setParticipantUpdated(!participantUpdated);
     }
@@ -3577,7 +3722,7 @@ function AntMedia(props) {
   }
 
   function handlePlayVideo(obj) {
-    console.log("handlePlayVideo: " + JSON.stringify(obj));
+    // console.log("handlePlayVideo: " + JSON.stringify(obj));
     let index = obj?.trackId?.substring("ARDAMSx".length);
     globals.trackEvents.push({ track: obj.track.id, event: "added" });
 
@@ -3989,7 +4134,7 @@ function AntMedia(props) {
     );
 
     if (!_.isEqual(pagedParticipants, tempPagedParticipants)) {
-    //   setPagedParticipants(tempPagedParticipants);
+      //   setPagedParticipants(tempPagedParticipants);
     }
   }, [allParticipants]);
 
@@ -4435,7 +4580,7 @@ function AntMedia(props) {
           ) : (
             <>
               <MeetingRoom
-              pagedParticipants={pagedParticipants}
+                pagedParticipants={pagedParticipants}
                 messageDrawerOpen={messageDrawerOpen}
                 participantListDrawerOpen={participantListDrawerOpen}
                 effectsDrawerOpen={effectsDrawerOpen}
@@ -4546,6 +4691,7 @@ function AntMedia(props) {
               <MessageDrawer
                 messages={messages}
                 sendMessage={(message) => handleSendMessage(message)}
+                sendFile = {(file)=>handleSendFile(file)}
                 uploadFile={(file) => handleFileUpload(file)}
                 handleSetMessages={(messages) => handleSetMessages(messages)}
                 messageDrawerOpen={messageDrawerOpen}

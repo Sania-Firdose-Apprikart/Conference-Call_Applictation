@@ -251,7 +251,7 @@ function ParticipantTab({
           ref={scrollContainerRef} onScroll={handleScroll} spacing={2}>
           {/* {getParticipantItem(publishStreamId, "You")} */}
           {Object.entries(pagedParticipants).map(([streamId, broadcastObject]) => {
-            console.log("stream id 254", broadcastObject);
+            // console.log("stream id 254", broadcastObject);
             
             if (publishStreamId !== streamId) {
               let assignedVideoCardId = videoTrackAssignments?.find(vta => vta.streamId === streamId)?.videoLabel;
