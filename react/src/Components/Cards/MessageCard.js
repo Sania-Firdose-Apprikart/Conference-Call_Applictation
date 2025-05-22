@@ -83,7 +83,7 @@ console.log("line 21", m.fileName);
             <a
               href={baseURL + m.serverFilePath}
               target="_blank"
-              download={m.fileName}
+              download="test"
               style={{ color: "red", textDecoration: "none" }}
             >
               {m.fileName}

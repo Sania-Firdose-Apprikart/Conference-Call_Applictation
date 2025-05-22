@@ -2967,43 +2967,9 @@ async function handleFileUpload(files) {
       ) {
         setIsBroadcasting(false);
         console.log("BROADCAST_OFF");
-      } else if (eventType === "FILE_RECEIVED") {
-        console.log("File received", notificationEvent.fileName);
-
-        if (
-          notificationEvent.senderId === publishStreamId ||
-          process.env.REACT_APP_FOOTER_MESSAGE_BUTTON_VISIBILITY === "false"
-        ) {
-          return;
-        }
-
-        calculate_scroll_height();
-
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        notificationEvent.date = new Date(
-          notificationEvent?.date
-        ).toLocaleString(getLang(), {
-          timeZone: timezone,
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-
-        if (!messageDrawerOpen) {
-          enqueueSnackbar(`📎 ${notificationEvent.fileName}`, {
-            sender: notificationEvent.name,
-            variant: "file",
-            onClick: () => {
-              handleMessageDrawerOpen(true);
-              setNumberOfUnReadMessages(0);
-            },
-            autoHideDuration: 5000,
-            anchorOrigin: { vertical: "top", horizontal: "right" },
-          });
-          setNumberOfUnReadMessages((numb) => numb + 1);
-        }
-
-        // setMessages((oldMessages) => [...oldMessages, notificationEvent]);
-      }
+      } 
+      
+   
 
    else if (
         eventType === "MESSAGE_RECEIVED" 
@@ -3090,7 +3056,7 @@ async function handleFileUpload(files) {
         if (!messageDrawerOpen) {
           enqueueSnackbar(notificationEvent.fileName, {
             sender: notificationEvent.name ,
-            variant: "text",
+            variant: "message",
             onClick: () => {
               handleMessageDrawerOpen(true);
               setNumberOfUnReadMessages(0);
