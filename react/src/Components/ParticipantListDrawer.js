@@ -31,7 +31,7 @@ const ParticipantListDrawer = React.memo((props) => {
 
   return (
     <AntDrawer transitionDuration={200} anchor={'right'} id="message-drawer" open={props?.participantListDrawerOpen} variant="persistent">
-      <ParticipantListGrid container direction="column" style={{ flexWrap: 'nowrap', height: '100%', overflow: 'hidden' }}>
+      <ParticipantListGrid container direction="column" style={{ flexWrap: 'nowrap', height: '100%', overflow: 'hidden' ,boxShadow:"1px 1px 10px rgb(0,0,0,0.3)"}}>
         <Grid item container justifyContent="space-between" alignItems="center">
           {t('PARTICIPANTS')}
           <CloseDrawerButton
