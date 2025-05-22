@@ -22,6 +22,7 @@ const TabGrid = styled(Grid)(({ theme }) => ({
   paddingBottom: 16,
   paddingTop: 16,
   flexWrap: 'nowrap',
+  
 }));
 
 const MessageDrawer = React.memo(props => {
@@ -54,7 +55,7 @@ const MessageDrawer = React.memo(props => {
 
 return (
         <AntDrawer transitionDuration={200} anchor={'right'} id="message-drawer" open={props.messageDrawerOpen} variant="persistent">
-          <MessageGrid container direction="column" style={{ flexWrap: 'nowrap', height: '100%', overflow: 'hidden' }}>
+          <MessageGrid container direction="column" style={{boxShadow:"1px 1px 10px rgb(0,0,0,0.3)", flexWrap: 'nowrap', height: '100%', overflow: 'hidden' }}>
             <Grid item container justifyContent="space-between" alignItems="center">
               <Tabs
                   TabIndicatorProps={{
