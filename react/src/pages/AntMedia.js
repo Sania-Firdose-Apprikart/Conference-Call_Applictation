@@ -2742,7 +2742,7 @@ function AntMedia(props) {
     console.log("handleSend file triggered", file);
     const fileName = file.fileName
     const serverFilePath = file.serverFilePath
-    
+    console.log("line 2745",fileName)
   if (publishStreamId || isPlayOnly) {
     let streamId = isPlayOnly ? roomName : publishStreamId;
     let iceState = webRTCAdaptor?.iceConnectionState(streamId);
@@ -2763,8 +2763,11 @@ function AntMedia(props) {
             hour: "2-digit",
             minute: "2-digit",
           }),
+          
+        
         })
       );
+      
     } else {
       console.error("WebRTC connection is not stable:", iceState);
     }
@@ -2773,7 +2776,7 @@ function AntMedia(props) {
   }
 }
 
-  function handleFileUpload(files) {
+async function handleFileUpload(files) {
     console.log("line 2225", files);
 
     const file = files[0];
@@ -2800,28 +2803,46 @@ function AntMedia(props) {
       alert("File size exceeds 25MB limit.");
       return;
     }
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append("vc_room", roomName);
+    formData.append("user_type", "CUSTOMER");
+    formData.append("who", publishStreamId);
+
+   fetch("https://videoserver.apprikart.com/kia_vc_api/v1/upload_vc_file/", {
+  method: "POST",
+  body: formData
+})
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+    }
+    return response.json();
+  })
+  .then(fileResponse => {
+    console.log("file response", fileResponse);
+
+    const fileMessage = {
+      eventType: "FILE_MESSAGE",
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size,
+      serverFilePath: fileResponse.file,
+      senderId: isPlayOnly ? roomName : publishStreamId,
+      name: streamName,
+      date: new Date().toString(),
+    };
+
+    const streamId = isPlayOnly ? roomName : publishStreamId;
+    console.log("webRTC adapter called", streamId, fileMessage);
+
+    webRTCAdaptor?.sendData(streamId, JSON.stringify(fileMessage));
+  })
+  .catch(error => console.error("Error uploading file:", error));
+  
 
     // Process the file
-    const reader = new FileReader();
-    reader.onload = () => {
-      // Remove metadata by splitting the base64 string.
-      const base64Data = reader.result.split(",")[1];
-      const fileMessage = {
-        eventType: "FILE_RECEIVED",
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-        fileContent: base64Data, // Base64 encoded content
-        senderId: isPlayOnly ? roomName : publishStreamId,
-        name: streamName,
-        date: new Date().toString(),
-      };
-      let streamId = isPlayOnly ? roomName : publishStreamId;
-      console.log("webRTC adapter called", streamId, fileMessage);
 
-      webRTCAdaptor?.sendData(streamId, JSON.stringify(fileMessage));
-    };
-    reader.readAsDataURL(file);
   }
 
   function handleDebugInfo(debugInfo) {
@@ -2984,151 +3005,123 @@ function AntMedia(props) {
         // setMessages((oldMessages) => [...oldMessages, notificationEvent]);
       }
 
-      else if (eventType === "MESSAGE_RECEIVED") {
-        
-        // Skip if message is from self or footer message button is disabled
+   else if (
+        eventType === "MESSAGE_RECEIVED" 
+      ) {
+        // if message arrives from myself or footer message button is disabled then we are not going to show it.
         if (
           notificationEvent.senderId === publishStreamId ||
           process.env.REACT_APP_FOOTER_MESSAGE_BUTTON_VISIBILITY === "false"
         ) {
           return;
         }
-    
+        console.log("TEXT MESSAGE 2438", notificationEvent);
 
-        // Calculate scroll height for chat
         calculate_scroll_height();
-
-   
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        const formattedDate =
-          notificationEvent?.date && !isNaN(new Date(notificationEvent.date))
-            ? new Date(notificationEvent.date).toLocaleString(getLang(), {
-                timeZone: timezone,
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : new Date().toLocaleString(getLang(), {
-                timeZone: timezone,
-                hour: "2-digit",
-                minute: "2-digit",
-              });
-        const messageObject = {
-          date: formattedDate,
-          eventType: notificationEvent.eventType,
-          message: notificationEvent.message,
-          name: notificationEvent.name,
-        };
-
-        // Show snackbar and increment unread count if message drawer is closed
+        notificationEvent.date = new Date(
+          notificationEvent?.date
+        ).toLocaleString(getLang(), {
+          timeZone: timezone,
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        // if message arrives.
+        // if there is an new message and user has not opened message component then we are going to increase number of unread messages by one.
+        // we are gonna also send snackbar.
         if (!messageDrawerOpen) {
-          enqueueSnackbar(
-            notificationEvent.message,
-            {
-              sender: notificationEvent.name,
-              variant: "message",
-              onClick: () => {
-                handleMessageDrawerOpen(true);
-                setNumberOfUnReadMessages(0);
-              },
-              autoHideDuration: 5000,
-              anchorOrigin: {
-                vertical: "top",
-                horizontal: "right",
-              },
-            }
-          );
+          enqueueSnackbar(notificationEvent.message, {
+            sender: notificationEvent.name,
+            variant: "message",
+            onClick: () => {
+              handleMessageDrawerOpen(true);
+              setNumberOfUnReadMessages(0);
+            },
+            autoHideDuration: 5000,
+            anchorOrigin: {
+              vertical: "top",
+              horizontal: "right",
+            },
+          });
           setNumberOfUnReadMessages((numb) => numb + 1);
         }
         setMessages((oldMessages) => {
-          let lastMessage = oldMessages[oldMessages.length - 1];
-          const isSameUser = lastMessage?.name === messageObject.name;
-          const sentInSameTime = lastMessage?.date === messageObject.date;
+          let lastMessage = oldMessages[oldMessages.length - 1]; //this must remain mutable
+          const isSameUser =
+            lastMessage?.name === notificationEvent?.name;
+          const sentInSameTime = lastMessage?.date === notificationEvent?.date;
 
-          if (isSameUser && sentInSameTime) {
-            console.log("Grouping messages:", {
-              lastMessage: lastMessage.message,
-              newMessage: messageObject.message,
-            });
-            lastMessage.message += `\n${messageObject.message}`;
-            // return [...oldMessages];
+          if (isSameUser && sentInSameTime && lastMessage?.eventType === "MESSAGE_RECEIVED") {
+            console.log("last message", lastMessage);
+            
+            //group the messages sent back to back in the same timeframe by the same user by joinig the new message text with new line
+            lastMessage.message =
+              lastMessage.message + "\n" + notificationEvent.message ||
+              notificationEvent.TEXT_MESSAGE_VALUE;
+            return [...oldMessages]; // don't make this "return oldMessages;" this is to trigger the useEffect for scroll bottom and get over showing the last prev state do
           } else {
-            return [...oldMessages, messageObject];
+            return [...oldMessages, notificationEvent];
           }
         });
       } 
-      else if (eventType === "FILE_MESSAGE") {
-        
-        // Skip if message is from self or footer message button is disabled
+      
+    else if(eventType === "FILE_MESSAGE"){
+        // if message arrives from myself or footer message button is disabled then we are not going to show it.
         if (
           notificationEvent.senderId === publishStreamId ||
           process.env.REACT_APP_FOOTER_MESSAGE_BUTTON_VISIBILITY === "false"
         ) {
           return;
         }
-    
+        console.log("File received", notificationEvent);
 
-        // Calculate scroll height for chat
         calculate_scroll_height();
-
-   
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        const formattedDate =
-          notificationEvent?.date && !isNaN(new Date(notificationEvent.date))
-            ? new Date(notificationEvent.date).toLocaleString(getLang(), {
-                timeZone: timezone,
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : new Date().toLocaleString(getLang(), {
-                timeZone: timezone,
-                hour: "2-digit",
-                minute: "2-digit",
-              });
-        const fileObject = {
-          date: formattedDate,
-          eventType: notificationEvent.eventType,
-          message: notificationEvent.fileName,
-          name: notificationEvent.name,
-          filePath: notificationEvent.serverFilePath
-        };
-
-        // Show snackbar and increment unread count if message drawer is closed
+        notificationEvent.date = new Date(
+          notificationEvent?.date
+        ).toLocaleString(getLang(), {
+          timeZone: timezone,
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        // if message arrives.
+        // if there is an new message and user has not opened message component then we are going to increase number of unread messages by one.
+        // we are gonna also send snackbar.
         if (!messageDrawerOpen) {
-          enqueueSnackbar(
-            notificationEvent.message,
-            {
-              sender: notificationEvent.name,
-              variant: "file",
-              onClick: () => {
-                handleMessageDrawerOpen(true);
-                setNumberOfUnReadMessages(0);
-              },
-              autoHideDuration: 5000,
-              anchorOrigin: {
-                vertical: "top",
-                horizontal: "right",
-              },
-            }
-          );
+          enqueueSnackbar(notificationEvent.fileName, {
+            sender: notificationEvent.name ,
+            variant: "text",
+            onClick: () => {
+              handleMessageDrawerOpen(true);
+              setNumberOfUnReadMessages(0);
+            },
+            autoHideDuration: 5000,
+            anchorOrigin: {
+              vertical: "top",
+              horizontal: "right",
+            },
+          });
           setNumberOfUnReadMessages((numb) => numb + 1);
         }
         setMessages((oldMessages) => {
-          let lastMessage = oldMessages[oldMessages?.length - 1];
-          const isSameUser = lastMessage?.name === fileObject.name;
-          const sentInSameTime = lastMessage?.date === fileObject.date;
+          let lastMessage = oldMessages[oldMessages.length - 1]; //this must remain mutable
+          const isSameUser =
+            lastMessage?.name === notificationEvent?.name ||
+            notificationEvent?.display_names;
+          const sentInSameTime = lastMessage?.date === notificationEvent?.date;
 
           if (isSameUser && sentInSameTime) {
-            console.log("Grouping messages:", {
-              lastMessage: lastMessage.message,
-              newMessage: fileObject.message,
-            });
-            lastMessage.message += `\n${fileObject.message}`;
-            // return [...oldMessages];
+            //group the messages sent back to back in the same timeframe by the same user by joinig the new message text with new line
+            lastMessage.message =
+              lastMessage.message + "\n" + notificationEvent.message ||
+              notificationEvent.TEXT_MESSAGE_VALUE;
+              console.log("line 3071", notificationEvent.TEXT_MESSAGE_VALUE, notificationEvent);
+              
+            return [...oldMessages]; // don't make this "return oldMessages;" this is to trigger the useEffect for scroll bottom and get over showing the last prev state do
           } else {
-            return [...oldMessages, fileObject];
+            return [...oldMessages, notificationEvent];
           }
-        });
-      } 
+        });}
       
       
       else if (
