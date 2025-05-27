@@ -17,7 +17,12 @@ function MessageCard(props) {
   }, []);
 
   // Check if the message represents a file upload
-  const isFileMessage = m?.eventType === "FILE_MESSAGE";
+  // const isFileMessage = m?.eventType === "FILE_MESSAGE";
+
+  const isFileMessage =
+  m?.eventType?.toLowerCase() === "file_message" ||
+  m?.type?.toLowerCase() === "file_message";
+
   
 
   const downloadUrl = useMemo(() => {
@@ -31,7 +36,7 @@ function MessageCard(props) {
     }
   }, [isFileMessage, m.fileContent, m.fileType]);
   const baseURL = "https://videoserver.apprikart.com/";
-console.log("line 21", m.fileName);
+// console.log("line 21", m.fileName);
   // Cleanup: Revoke the object URL when the component unmounts.
   useEffect(() => {
     return () => {
@@ -83,10 +88,11 @@ console.log("line 21", m.fileName);
             <a
               href={baseURL + m.serverFilePath}
               target="_blank"
-              download="test"
+              // download="test"
+              download={m.fileName}
               style={{ color: "red", textDecoration: "none" }}
             >
-              {m.fileName}
+              {props?.isMe? m.message : m.fileName}
             </a>
 
             <Typography

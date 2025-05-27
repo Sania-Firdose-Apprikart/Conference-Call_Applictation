@@ -21,7 +21,7 @@ const AntSnackContent = styled(SnackbarContent)(({ theme }) => ({}));
 const SnackMessage = forwardRef((props, ref) => {
   const { variant, message, icon, onClick, sender } = props;
   const { closeSnackbar } = useSnackbar();
-  console.log("line 24", variant, message, sender);
+  // console.log("line 24", variant, message, sender);
   
   const theme = useTheme();
 

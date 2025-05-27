@@ -1821,7 +1821,9 @@ function AntMedia(props) {
       setInitialized(true);
     } else if (info === "subtrackList") {
       let subtrackList = obj.subtrackList;
+      console.log("line 1824",obj)
       let subTrackArray = subtrackList.map((track) => JSON.parse(track));
+      // let subTrackArray = subtrackList.map((track) => JSON.parse(track)).filter((track) => !track.zombi);
       console.log("subtrackList:", subtrackList, subTrackArray);
       setPagedParticipants(subTrackArray);
       let allParticipantsTemp = allParticipants;
@@ -1912,7 +1914,8 @@ function AntMedia(props) {
         console.log("screen share added:" + obj.trackId);
         webRTCAdaptor?.getBroadcastObject(obj.trackId);
       }
-    } else if (info === "subtrackRemoved") {
+    } 
+    else if (info === "subtrackRemoved") {
       console.log("subtrack removed:", obj);
 
       //this is the way to syncronize the state update
@@ -1928,7 +1931,8 @@ function AntMedia(props) {
         console.log("currently pinned stream is removed:" + obj.trackId);
         unpinVideo(false);
       }
-    } else if (info === "publish_started") {
+    } 
+    else if (info === "publish_started") {
       setIsPublished(true);
       streamIdInUseCounter = 0;
       console.log("**** publish started:" + reconnecting);
@@ -2707,7 +2711,6 @@ function AntMedia(props) {
       senderStreamId: streamId,
     });
   }
-
   function handleSendMessage(message) {
     if (publishStreamId || isPlayOnly) {
       let streamId = isPlayOnly ? roomName : publishStreamId;
@@ -2724,60 +2727,66 @@ function AntMedia(props) {
           setMessages([]);
           return;
         }
-
-        webRTCAdaptor?.sendData(
-          streamId,
-          JSON.stringify({
-            eventType: "MESSAGE_RECEIVED",
-            message: message,
-            name: streamName,
-            senderId: streamId,
-            date: new Date().toString(),
-          })
-        );
+        try {
+          webRTCAdaptor?.sendData(
+            streamId,
+            JSON.stringify({
+              eventType: "MESSAGE_RECEIVED",
+              message: message,
+              name: streamName,
+              senderId: streamId,
+              date: new Date().toString(),
+            })
+          );
+        } catch (error) {
+          alert(`Message is not sent: ${error.message}`);
+        }
       }
     }
   }
+
   function handleSendFile(file) {
     console.log("handleSend file triggered", file);
-    const fileName = file.fileName
-    const serverFilePath = file.serverFilePath
-    console.log("line 2745",fileName)
-  if (publishStreamId || isPlayOnly) {
-    let streamId = isPlayOnly ? roomName : publishStreamId;
-    let iceState = webRTCAdaptor?.iceConnectionState(streamId);
-    if (
-      iceState !== null &&
-      iceState !== "failed" &&
-      iceState !== "disconnected"
-    ) {
-      webRTCAdaptor?.sendData(
-        streamId,
-        JSON.stringify({
-          eventType: "FILE_MESSAGE",
-          fileName: fileName,
-          serverFilePath: serverFilePath,
-          name: streamName,
-          senderId: streamId,
-          date: new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          
-        
-        })
-      );
-      
-    } else {
-      console.error("WebRTC connection is not stable:", iceState);
-    }
-  } else {
-    console.error("No stream ID available for sending file message");
-  }
-}
+    const fileName = file.fileName;
+    const serverFilePath = file.serverFilePath;
+    console.log("line 2745", fileName);
+    try {
+      if (publishStreamId || isPlayOnly) {
+        let streamId = isPlayOnly ? roomName : publishStreamId;
+        let iceState = webRTCAdaptor?.iceConnectionState(streamId);
 
-async function handleFileUpload(files) {
-    console.log("line 2225", files);
+        if (
+          iceState !== null &&
+          iceState !== "failed" &&
+          iceState !== "disconnected"
+        ) {
+          webRTCAdaptor?.sendData(
+            streamId,
+            JSON.stringify({
+              eventType: "FILE_MESSAGE",
+              fileName: fileName,
+              serverFilePath: serverFilePath,
+              name: streamName,
+              senderId: streamId,
+              date: new Date().toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+            })
+          );
+        } else {
+          console.error("WebRTC connection is not stable:", iceState);
+        }
+      } else {
+        console.error("No stream ID available for sending file message");
+      }
+    } catch (error) {
+      alert(`File is not sent: ${error.message}`);
+    }
+  }
+
+  async function handleFileUpload(files) {
+    // console.log("line 2225", files);
 
     const file = files[0];
 
@@ -2785,64 +2794,65 @@ async function handleFileUpload(files) {
     console.log("file", file);
 
     // Allowed MIME types for PDF, Word, and Excel files.
-    const allowedTypes = [
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "application/vnd.ms-excel",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    ];
+    // const allowedTypes = [
+    //   "application/pdf",
+    //   "application/msword",
+    //   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    //   "application/vnd.ms-excel",
+    //   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    // ];
 
-    if (!allowedTypes.includes(file.type)) {
-      alert("Only PDF, Word, or Excel files are allowed.");
-      return;
-    }
+    // if (!allowedTypes.includes(file.type)) {
+    //   alert("Only PDF, Word, or Excel files are allowed.");
+    //   return;
+    // }
 
     // Check if file exceeds 25 MB
+
     if (file.size > 25 * 1024 * 1024) {
       alert("File size exceeds 25MB limit.");
       return;
     }
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
     formData.append("vc_room", roomName);
     formData.append("user_type", "CUSTOMER");
     formData.append("who", publishStreamId);
 
-   fetch("https://videoserver.apprikart.com/kia_vc_api/v1/upload_vc_file/", {
-  method: "POST",
-  body: formData
-})
-  .then(response => {
-    if (!response.ok) {
-      throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
-    }
-    return response.json();
-  })
-  .then(fileResponse => {
-    console.log("file response", fileResponse);
+    fetch("https://videoserver.apprikart.com/kia_vc_api/v1/upload_vc_file/", {
+      method: "POST",
+      body: formData,
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            `Upload failed: ${response.status} ${response.statusText}`
+          );
+        }
+        return response.json();
+      })
+      .then((fileResponse) => {
+        console.log("file response", fileResponse);
 
-    const fileMessage = {
-      eventType: "FILE_MESSAGE",
-      fileName: file.name,
-      fileType: file.type,
-      fileSize: file.size,
-      serverFilePath: fileResponse.file,
-      senderId: isPlayOnly ? roomName : publishStreamId,
-      name: streamName,
-      date: new Date().toString(),
-    };
+        const fileMessage = {
+          eventType: "FILE_MESSAGE",
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+          serverFilePath: fileResponse.file,
+          senderId: isPlayOnly ? roomName : publishStreamId,
+          name: streamName,
+          date: new Date().toString(),
+        };
 
-    const streamId = isPlayOnly ? roomName : publishStreamId;
-    console.log("webRTC adapter called", streamId, fileMessage);
+        const streamId = isPlayOnly ? roomName : publishStreamId;
+        console.log("webRTC adapter called", streamId, fileMessage);
 
-    webRTCAdaptor?.sendData(streamId, JSON.stringify(fileMessage));
-  })
-  .catch(error => console.error("Error uploading file:", error));
-  
+        webRTCAdaptor?.sendData(streamId, JSON.stringify(fileMessage));
+      })
+      .catch((error) => console.error("Error uploading file:", error));
 
     // Process the file
-
   }
 
   function handleDebugInfo(debugInfo) {
@@ -2967,13 +2977,7 @@ async function handleFileUpload(files) {
       ) {
         setIsBroadcasting(false);
         console.log("BROADCAST_OFF");
-      } 
-      
-   
-
-   else if (
-        eventType === "MESSAGE_RECEIVED" 
-      ) {
+      } else if (eventType === "MESSAGE_RECEIVED") {
         // if message arrives from myself or footer message button is disabled then we are not going to show it.
         if (
           notificationEvent.senderId === publishStreamId ||
@@ -3011,27 +3015,58 @@ async function handleFileUpload(files) {
           });
           setNumberOfUnReadMessages((numb) => numb + 1);
         }
+        // setMessages((oldMessages) => {
+        //   let lastMessage = oldMessages[oldMessages.length - 1]; //this must remain mutable
+        //   const isSameUser = lastMessage?.name === notificationEvent?.name;
+        //   const sentInSameTime = lastMessage?.date === notificationEvent?.date;
+
+        //   if (
+        //     isSameUser &&
+        //     sentInSameTime &&
+        //     lastMessage?.eventType === "MESSAGE_RECEIVED"
+        //   ) {
+        //     console.log("last message", lastMessage);
+
+        //     //group the messages sent back to back in the same timeframe by the same user by joinig the new message text with new line
+        //     lastMessage.message =
+        //       lastMessage.message + "\n" + notificationEvent.message ||
+        //       notificationEvent.TEXT_MESSAGE_VALUE;
+        //     return [...oldMessages]; // don't make this "return oldMessages;" this is to trigger the useEffect for scroll bottom and get over showing the last prev state do
+        //   } else {
+        //     return [...oldMessages, notificationEvent];
+        //   }
+        // });
         setMessages((oldMessages) => {
-          let lastMessage = oldMessages[oldMessages.length - 1]; //this must remain mutable
-          const isSameUser =
-            lastMessage?.name === notificationEvent?.name;
+          const lastMessage = oldMessages[oldMessages.length - 1];
+          const isSameUser = lastMessage?.name === notificationEvent?.name;
           const sentInSameTime = lastMessage?.date === notificationEvent?.date;
 
-          if (isSameUser && sentInSameTime && lastMessage?.eventType === "MESSAGE_RECEIVED") {
-            console.log("last message", lastMessage);
-            
-            //group the messages sent back to back in the same timeframe by the same user by joinig the new message text with new line
-            lastMessage.message =
-              lastMessage.message + "\n" + notificationEvent.message ||
-              notificationEvent.TEXT_MESSAGE_VALUE;
-            return [...oldMessages]; // don't make this "return oldMessages;" this is to trigger the useEffect for scroll bottom and get over showing the last prev state do
+          if (
+            isSameUser &&
+            sentInSameTime &&
+            lastMessage?.eventType === "MESSAGE_RECEIVED"
+          ) {
+            // Create a copy of the last message with updated text
+            const updatedLastMessage = {
+              ...lastMessage,
+              message:
+                lastMessage.message +
+                "\n" +
+                (notificationEvent.message ||
+                  notificationEvent.TEXT_MESSAGE_VALUE),
+            };
+
+            // Replace the last message in the array
+            return [
+              ...oldMessages.slice(0, oldMessages.length - 1),
+              updatedLastMessage,
+            ];
           } else {
             return [...oldMessages, notificationEvent];
           }
         });
-      } 
-      
-    else if(eventType === "FILE_MESSAGE"){
+      } else if (eventType === "FILE_MESSAGE") {
+        // console.log("file message line 3039",notificationEvent)
         // if message arrives from myself or footer message button is disabled then we are not going to show it.
         if (
           notificationEvent.senderId === publishStreamId ||
@@ -3055,7 +3090,7 @@ async function handleFileUpload(files) {
         // we are gonna also send snackbar.
         if (!messageDrawerOpen) {
           enqueueSnackbar(notificationEvent.fileName, {
-            sender: notificationEvent.name ,
+            sender: notificationEvent.name,
             variant: "message",
             onClick: () => {
               handleMessageDrawerOpen(true);
@@ -3069,28 +3104,57 @@ async function handleFileUpload(files) {
           });
           setNumberOfUnReadMessages((numb) => numb + 1);
         }
-        setMessages((oldMessages) => {
-          let lastMessage = oldMessages[oldMessages.length - 1]; //this must remain mutable
-          const isSameUser =
-            lastMessage?.name === notificationEvent?.name ||
-            notificationEvent?.display_names;
-          const sentInSameTime = lastMessage?.date === notificationEvent?.date;
+        // setMessages((oldMessages) => {
+        //   let lastMessage = oldMessages[oldMessages.length - 1]; //this must remain mutable
+        //   const isSameUser =
+        //     lastMessage?.name === notificationEvent?.name ||
+        //     notificationEvent?.display_names;
+        //   const sentInSameTime = lastMessage?.date === notificationEvent?.date;
 
-          if (isSameUser && sentInSameTime) {
-            //group the messages sent back to back in the same timeframe by the same user by joinig the new message text with new line
-            lastMessage.message =
-              lastMessage.message + "\n" + notificationEvent.message ||
-              notificationEvent.TEXT_MESSAGE_VALUE;
-              console.log("line 3071", notificationEvent.TEXT_MESSAGE_VALUE, notificationEvent);
-              
-            return [...oldMessages]; // don't make this "return oldMessages;" this is to trigger the useEffect for scroll bottom and get over showing the last prev state do
-          } else {
-            return [...oldMessages, notificationEvent];
-          }
-        });}
-      
-      
-      else if (
+        //   if (isSameUser && sentInSameTime) {
+        //     //group the messages sent back to back in the same timeframe by the same user by joinig the new message text with new line
+        //     lastMessage.message =
+        //       lastMessage.message + "\n" + notificationEvent.message ||
+        //       notificationEvent.TEXT_MESSAGE_VALUE;
+        //     console.log(
+        //       "line 3071",
+        //       notificationEvent.TEXT_MESSAGE_VALUE,
+        //       notificationEvent
+        //     );
+
+        //     return [...oldMessages]; // don't make this "return oldMessages;" this is to trigger the useEffect for scroll bottom and get over showing the last prev state do
+        //   } else {
+        //     return [...oldMessages, notificationEvent];
+        //   }
+        // });
+             setMessages((oldMessages) => {
+  const lastMessage = oldMessages[oldMessages.length - 1];
+  const isSameUser = lastMessage?.name === notificationEvent?.name;
+  const sentInSameTime = lastMessage?.date === notificationEvent?.date;
+
+  // Only group if it's a TEXT message from the same user and time
+  if (
+    isSameUser &&
+    sentInSameTime &&
+    lastMessage?.eventType === "FILE_MESSAGE"
+  ) {
+    // Optional: Do not group file messages; it's safer and avoids bugs.
+    return [...oldMessages, notificationEvent];
+  } else {
+    return [...oldMessages, notificationEvent];
+  }
+});
+
+
+     
+     
+      } else if (eventType === "SCREEN_SHARING_ON") {
+        console.log("line 3090", obj);
+        pinVideo(eventStreamId);
+      } else if (eventType === "SCREEN_SHARING_OFF") {
+        console.log("line 3094", obj);
+        unpinVideo(false);
+      } else if (
         eventType === "REACTIONS" &&
         notificationEvent.senderStreamId !== publishStreamId
       ) {
@@ -3443,11 +3507,25 @@ async function handleFileUpload(files) {
     }
   }
 
-  function getUserStatusMetadata(isMicMuted, isCameraOn, isScreenShareActive) {
+  function getUserStatusMetadata(
+    isMicMuted,
+    isCameraOn,
+    isScreenShareActive,
+    streamId
+  ) {
+    const participant = allParticipants[streamId];
+    const currentMetadata = participant
+      ? JSON.parse(participant.metaData || "{}")
+      : {};
     let metadata = {
-      isMicMuted: isMicMuted === null ? null : isMicMuted,
-      isCameraOn: isCameraOn,
-      isScreenShared: isScreenShareActive,
+      // isMicMuted: isMicMuted === null ? null : isMicMuted,
+      // isCameraOn: isCameraOn,
+      // isScreenShared: isScreenShareActive,
+      // playOnly: isPlayOnly,
+      // role: role,
+      isMicMuted: isMicMuted === null ? currentMetadata.isMicMuted : isMicMuted,
+      isCameraOn: isCameraOn === null ? currentMetadata.isCameraOn : isCameraOn,
+      isScreenShared: false, // you might want to keep this dynamic as well
       playOnly: isPlayOnly,
       role: role,
     };
@@ -3469,7 +3547,7 @@ async function handleFileUpload(files) {
   );
 
   function updateUserStatusMetadata(micMuted, cameraOn, streamId) {
-    let metadata = getUserStatusMetadata(micMuted, cameraOn, false);
+    let metadata = getUserStatusMetadata(micMuted, cameraOn, false, streamId);
 
     webRTCAdaptor?.updateStreamMetaData(streamId, JSON.stringify(metadata));
   }
@@ -4650,7 +4728,7 @@ async function handleFileUpload(files) {
               <MessageDrawer
                 messages={messages}
                 sendMessage={(message) => handleSendMessage(message)}
-                sendFile = {(file)=>handleSendFile(file)}
+                sendFile={(file) => handleSendFile(file)}
                 uploadFile={(file) => handleFileUpload(file)}
                 handleSetMessages={(messages) => handleSetMessages(messages)}
                 messageDrawerOpen={messageDrawerOpen}

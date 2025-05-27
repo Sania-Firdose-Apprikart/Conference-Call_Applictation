@@ -21,6 +21,12 @@ import "../App.css";
 import { useParams } from "react-router-dom";
 import { isComponentMode, getRootAttribute } from "../utils";
 import { useNavigate } from "react-router-dom";
+//added
+import OutlinedInput from "@mui/material/OutlinedInput";
+import InputAdornment from "@mui/material/InputAdornment";
+import IconButton from "@mui/material/IconButton";
+import Visibility from "@mui/icons-material/Visibility";
+import VisibilityOff from "@mui/icons-material/VisibilityOff";
 
 export const Joining = ({ setIsAuthenticated }) => {
   const [passcode, setPasscode] = useState("");
@@ -29,7 +35,11 @@ export const Joining = ({ setIsAuthenticated }) => {
   const [openTerms, setOpenTerms] = useState(false);
   const [openPrivacy, setOpenPrivacy] = useState(false);
   const [activeLink, setActiveLink] = useState("");
- 
+  //added
+  const [showPasscode, setShowPasscode] = useState(false);
+  const handleToggleShowPasscode = () => {
+    setShowPasscode((prev) => !prev);
+  };
   const { id } = useParams();
   // const id = "V04P4CTFU4";
   console.log("id from route in joining:", id);
@@ -38,7 +48,7 @@ export const Joining = ({ setIsAuthenticated }) => {
 
   const handleOpenTerms = () => {
     setActiveLink("terms");
-    setOpenTerms(true); 
+    setOpenTerms(true);
   };
 
   const handleCloseTerms = () => setOpenTerms(false);
@@ -169,6 +179,7 @@ export const Joining = ({ setIsAuthenticated }) => {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
+          px: 2,
         }}
       >
         <Card
@@ -176,9 +187,9 @@ export const Joining = ({ setIsAuthenticated }) => {
             width: {
               xs: "90%", // for small devices
               sm: 400, // for tablets
-              md: 460, // for desktops
+              md: 510, // for desktops
             },
-            height: error ? { xs: 450, sm: 430 } : { xs: 400, sm: 380 },
+            height: error ? { xs: 500, sm: 480 } : { xs: 450, sm: 430 },
             p: 1.8,
             backgroundColor: "rgba(255, 255, 255, 0.65)", // translucent white
             backdropFilter: "blur(2px)", // blur for glass effect
@@ -188,7 +199,7 @@ export const Joining = ({ setIsAuthenticated }) => {
         >
           <CardContent>
             <Box display="flex" justifyContent="center" mb={3} mt={2}>
-              <Joininglogo style={{ width: 100, height: "auto" }} />
+              <Joininglogo style={{ width: 120, height: "auto" }} />
             </Box>
             <Typography
               variant="h6"
@@ -211,7 +222,7 @@ export const Joining = ({ setIsAuthenticated }) => {
                   handleAuthenticate();
                 }}
               >
-                <BootstrapInput
+                {/* <BootstrapInput
                   placeholder="Passcode"
                   id="Passcode"
                   fullWidth
@@ -219,7 +230,39 @@ export const Joining = ({ setIsAuthenticated }) => {
                   onChange={(e) => setPasscode(e.target.value)}
                   autoFocus
                   type="text"
+                /> */}
+                <OutlinedInput
+                  placeholder="Passcode"
+                  id="Passcode"
+                  fullWidth
+                  value={passcode}
+                  onChange={(e) => setPasscode(e.target.value)}
+                  autoFocus
+                  type={showPasscode ? "text" : "password"}
+                  endAdornment={
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle passcode visibility"
+                        onClick={handleToggleShowPasscode}
+                        edge="end"
+                        sx={{ padding: "6px", mr: "2px" }}
+                      >
+                        {showPasscode ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  }
+                  sx={{
+                    backgroundColor: "#ffffff",
+                    border: "1px solid #000000",
+                    borderRadius: "4px",
+                    paddingRight: 0,
+                    "& input": {
+                      padding: "10px 12px",
+                      color: "#000000",
+                    },
+                  }}
                 />
+
                 <Button
                   type="submit"
                   fullWidth
@@ -228,7 +271,7 @@ export const Joining = ({ setIsAuthenticated }) => {
                     color: "#ffffff",
                     height: "40px",
                     borderRadius: "5px",
-                    mt: 2, // optional spacing
+                    mt: 4, // optional spacing
                   }}
                 >
                   Authenticate
@@ -264,7 +307,7 @@ export const Joining = ({ setIsAuthenticated }) => {
             <Typography
               variant="body2"
               textAlign="center"
-              mt={3.5}
+              mt={2.0}
               fontSize={15}
             >
               <span
