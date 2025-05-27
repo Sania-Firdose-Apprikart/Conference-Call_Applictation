@@ -187,9 +187,9 @@ export const Joining = ({ setIsAuthenticated }) => {
             width: {
               xs: "90%", // for small devices
               sm: 400, // for tablets
-              md: 510, // for desktops
+              md: 480, // for desktops
             },
-            height: error ? { xs: 500, sm: 480 } : { xs: 450, sm: 430 },
+            height: error ? { xs: 450, sm: 430 } : { xs: 400, sm: 380 },
             p: 1.8,
             backgroundColor: "rgba(255, 255, 255, 0.65)", // translucent white
             backdropFilter: "blur(2px)", // blur for glass effect
