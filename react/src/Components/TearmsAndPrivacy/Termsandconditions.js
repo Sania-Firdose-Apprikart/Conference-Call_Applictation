@@ -12,22 +12,23 @@ export const Termsandconditions = ({ open, onClose }) => {
     >
       <style>
         {`
-      .custom-close-icon {
-        font-size: 35px;
-        font-weight: 100;
-        color: rgb(128, 128, 128);
-        padding: 0 4px;
-        line-height: 1;
-        cursor: pointer;
-        background: transparent;
-        border: none;
-      }
+          .custom-close-icon {
+            font-size: 35px;
+            font-weight: 100;
+            color: rgb(128, 128, 128);
+            padding: 4px;
+            line-height: 1;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+            transition: color 0.2s, opacity 0.2s;
+          }
 
-      .custom-close-icon:hover {
-        color: #000000;
-        opacity: 0.7;
-      }
-    `}
+          .custom-close-icon:hover {
+            color: #000000;
+            opacity: 0.7;
+          }
+        `}
       </style>
       {/* Terms & Conditions Dialog */}
       <Dialog
@@ -38,46 +39,37 @@ export const Termsandconditions = ({ open, onClose }) => {
         scroll="paper"
         sx={{
           "& .MuiPaper-root": {
-            width: "800px",
-            backgroundColor: "#ffffff", // White background for dialog paper
-            color: "#000000", // Black text
-            border: "1px solid #000000", // Black border
+            width: { xs: "95%", sm: "800px" },
+            maxWidth: { xs: "95vw", sm: "800px" },
+            backgroundColor: "#ffffff",
+            color: "#000000",
+            border: "1px solid #000000",
             borderRadius: 1.5,
             overflowX: "hidden",
-            padding: "15px 15px",
+            padding: { xs: "8px", sm: "15px" },
+            margin: { xs: "0 auto", sm: "auto" },
           },
         }}
       >
         <DialogActions
           sx={{
-            width: {
-              xs: "350px", // Full width on mobile
-              sm: "700px", // Full width on tablets
-              md: "800px", // Fixed width on small and up
-            },
             display: "flex",
-            justifyContent: "end",
+            justifyContent: "flex-end",
             alignItems: "center",
-            height: 10,
+            padding: { xs: "8px", sm: "16px" },
             borderBottom: "1px solid #ccc",
-            padding: "2px 0 17px 0",
-            marginLeft: {
-              xs: "-15px", // No negative margin on mobile to prevent it from going off-screen
-              sm: "-15px", // Original margin for larger screens
-            },
-            padding: "0rem 1rem",
-            height: "fit-content",
+            minHeight: "48px",
           }}
         >
-          <AiOutlineClose onClick={onClose} className="custom-close-icon" />
+          <AiOutlineClose
+            onClick={onClose}
+            className="custom-close-icon"
+          />
         </DialogActions>
         <DialogContent
           sx={{
             width: "100%",
-            padding: {
-              xs: 0, // 0 padding on extra-small screens (mobile)
-              sm: "0 3rem", // 0 top/bottom and 3rem left/right on small and up
-            },
+            padding: { xs: "16px", sm: "24px" },
             "&::-webkit-scrollbar-track": {
               marginRight: "20px",
             },
