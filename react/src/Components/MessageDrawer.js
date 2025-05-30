@@ -79,7 +79,7 @@ return (
             <Grid item container justifyContent="space-between" alignItems="center" style={{ flex: '1 1 auto', overflowY: 'hidden' }}>
               <TabPanel value={value} index={0}>
                 <TabGrid container sx={{ pb: 0 }} direction={'column'}>
-                  <MessagesTab messages={props?.messages}/>
+                  <MessagesTab messages={props?.messages} publishStreamId={props.publishStreamId}/>
                 </TabGrid>
               </TabPanel>
             </Grid>

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { alpha, styled } from "@mui/material/styles";
 import DummyCard from "./DummyCard";
 import {
@@ -31,7 +31,10 @@ function VideoCard(props) {
   const { t } = useTranslation();
   const [displayHover, setDisplayHover] = useState(false);
   const theme = useTheme();
-
+useEffect(()=>{
+  // console.log("props from VideoCard", props);
+  
+},[props])
   const refVideo = useCallback(
     (node) => {
       if (node && props.trackAssignment.track) {

@@ -6,7 +6,7 @@ import {
   Card,
   CardContent,
 } from "@mui/material";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import FormControl from "@mui/material/FormControl";
 import { styled } from "@mui/material/styles";
 import InputBase from "@mui/material/InputBase";
@@ -46,19 +46,49 @@ export const Joining = ({ setIsAuthenticated }) => {
 
   const navigate = useNavigate();
 
-  const handleOpenTerms = () => {
+  // Add useEffect to handle clicks outside the links
+  useEffect(() => {
+    const handleDocumentClick = (event) => {
+      // Check if the clicked element is not one of the links
+      const isTermsLink = event.target.closest('[data-link="terms"]');
+      const isPrivacyLink = event.target.closest('[data-link="privacy"]');
+      
+      if (!isTermsLink && !isPrivacyLink) {
+        setActiveLink("");
+      }
+    };
+
+    document.addEventListener('click', handleDocumentClick);
+    
+    // Cleanup the event listener
+    return () => {
+      document.removeEventListener('click', handleDocumentClick);
+    };
+  }, []);
+
+  const handleOpenTerms = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     setActiveLink("terms");
     setOpenTerms(true);
   };
 
-  const handleCloseTerms = () => setOpenTerms(false);
+  const handleCloseTerms = () => {
+    setOpenTerms(false);
+    // Don't clear activeLink here - let it persist until user clicks elsewhere
+  };
 
-  const handleOpenPrivacy = () => {
+  const handleOpenPrivacy = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     setActiveLink("privacy");
     setOpenPrivacy(true);
   };
 
-  const handleClosePrivacy = () => setOpenPrivacy(false);
+  const handleClosePrivacy = () => {
+    setOpenPrivacy(false);
+    // Don't clear activeLink here - let it persist until user clicks elsewhere
+  };
 
   const BootstrapInput = styled(InputBase)(({ theme }) => ({
     "label + &": {
@@ -187,9 +217,9 @@ export const Joining = ({ setIsAuthenticated }) => {
             width: {
               xs: "90%", // for small devices
               sm: 400, // for tablets
-              md: 480, // for desktops
+              md: 450, // for desktops
             },
-            height: error ? { xs: 450, sm: 430 } : { xs: 400, sm: 380 },
+            height: error ? { xs: 450, sm: 430 } : { xs: 420, sm: 380 },
             p: 1.8,
             backgroundColor: "rgba(255, 255, 255, 0.65)", // translucent white
             backdropFilter: "blur(2px)", // blur for glass effect
@@ -215,22 +245,13 @@ export const Joining = ({ setIsAuthenticated }) => {
               Enter Meeting Passcode
             </Typography>
 
-            <FormControl variant="standard" fullWidth sx={{ mb: 3 }}>
+            <FormControl variant="standard" fullWidth sx={{ mb: 1 }}>
               <form
                 onSubmit={(e) => {
                   e.preventDefault(); // Prevent page reload
                   handleAuthenticate();
                 }}
               >
-                {/* <BootstrapInput
-                  placeholder="Passcode"
-                  id="Passcode"
-                  fullWidth
-                  value={passcode}
-                  onChange={(e) => setPasscode(e.target.value)}
-                  autoFocus
-                  type="text"
-                /> */}
                 <OutlinedInput
                   placeholder="Passcode"
                   id="Passcode"
@@ -253,12 +274,24 @@ export const Joining = ({ setIsAuthenticated }) => {
                   }
                   sx={{
                     backgroundColor: "#ffffff",
-                    border: "1px solid #000000",
                     borderRadius: "4px",
                     paddingRight: 0,
                     "& input": {
                       padding: "10px 12px",
                       color: "#000000",
+                    },
+                    // Default border
+                    "& .MuiOutlinedInput-notchedOutline": {
+                      border: "1px solid grey", // Default border color (light gray)
+                    },
+                    // Hover state
+                    "&:hover .MuiOutlinedInput-notchedOutline": {
+                      border: "1px solid grey", // Same border on hover unless focused
+                    },
+                    // Focused border
+                    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                      border: "1px solid black", // Thicker gray border on focus
+                      boxShadow: "0 0 0 3px rgba(0, 0, 0, 0.1)", // Subtle shadow effect
                     },
                   }}
                 />
@@ -267,11 +300,12 @@ export const Joining = ({ setIsAuthenticated }) => {
                   type="submit"
                   fullWidth
                   sx={{
-                    bgcolor: "#000000",
+                    bgcolor: "#04141f",
                     color: "#ffffff",
                     height: "40px",
                     borderRadius: "5px",
-                    mt: 4, // optional spacing
+                    fontSize: "14px",
+                    mt: 3, // optional spacing
                   }}
                 >
                   Authenticate
@@ -282,9 +316,10 @@ export const Joining = ({ setIsAuthenticated }) => {
             {error && (
               <Box
                 sx={{
-                  mt: 1,
+                  mt: 0,
                   px: 2,
                   py: 1,
+                  mb: 4,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
@@ -319,6 +354,7 @@ export const Joining = ({ setIsAuthenticated }) => {
               </span>{" "}
               <Link
                 href="#"
+                data-link="terms"
                 sx={{
                   padding: "2px 0px 1px 0px",
                   color: "#0D6EFD",
@@ -343,6 +379,7 @@ export const Joining = ({ setIsAuthenticated }) => {
               </span>{" "}
               <Link
                 href="#"
+                data-link="privacy"
                 sx={{
                   padding: "2px 0px 1px 0px",
                   color: "#0D6EFD",

@@ -15,15 +15,15 @@ function MessageCard(props) {
   useEffect(() => {
     console.log("MessageCard", m);
   }, []);
+  const fileSize = m.fileSize ?? m.file_content?.size ?? 0;
 
   // Check if the message represents a file upload
   // const isFileMessage = m?.eventType === "FILE_MESSAGE";
 
-  const isFileMessage =
-  m?.eventType?.toLowerCase() === "file_message" ||
-  m?.type?.toLowerCase() === "file_message";
-
-  
+  // const isFileMessage =
+  // m?.eventType?.toLowerCase() === "file_message" ||
+  // m?.type?.toLowerCase() === "file_message";
+  const isFileMessage = m?.eventType === "FILE_MESSAGE";
 
   const downloadUrl = useMemo(() => {
     if (!isFileMessage) return null;
@@ -36,7 +36,7 @@ function MessageCard(props) {
     }
   }, [isFileMessage, m.fileContent, m.fileType]);
   const baseURL = "https://videoserver.apprikart.com/";
-// console.log("line 21", m.fileName);
+  // console.log("line 21", m.fileName);
   // Cleanup: Revoke the object URL when the component unmounts.
   useEffect(() => {
     return () => {
@@ -92,7 +92,7 @@ function MessageCard(props) {
               download={m.fileName}
               style={{ color: "red", textDecoration: "none" }}
             >
-              {props?.isMe? m.message : m.fileName}
+              {props?.isMe ? m.message : m.fileName}
             </a>
 
             <Typography
@@ -100,7 +100,12 @@ function MessageCard(props) {
               display="block"
               color={theme.palette.grey}
             >
-              {`Size: ${(m.fileSize / 1024).toFixed(2)} KB`}
+              {/* {`Size: ${fileSize ? (fileSize / 1024).toFixed(2) : "Unknown"} KB`} */}
+              {`Size: ${
+                typeof fileSize === "string"
+                  ? fileSize
+                  : (fileSize / 1024).toFixed(2) + " KB"
+              }`}
             </Typography>
           </HyperTypography>
         ) : (

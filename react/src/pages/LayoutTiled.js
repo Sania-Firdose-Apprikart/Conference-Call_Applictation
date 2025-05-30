@@ -97,7 +97,11 @@ function LayoutTiled(props) {
           }
 
           let participantName = props?.allParticipants[element?.streamId]?.name;
+          if(participantName==="KIA"){
 
+            
+          }
+                      // console.log("props from line 101", element);
           if (
             participantName === "" ||
             typeof participantName === "undefined" ||

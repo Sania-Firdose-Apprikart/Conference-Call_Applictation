@@ -58,6 +58,8 @@ export const PrivacyandPolicy = ({ open, onClose }) => {
             borderBottom: "1px solid #ccc",
             padding: "2px 0px 17px 0px",
             marginLeft: "-15px",
+             padding: "0rem 1rem",
+            height: "fit-content",
           }}
         >
           <AiOutlineClose onClick={onClose} className="custom-close-icon" />

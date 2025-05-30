@@ -47,8 +47,8 @@ function MessagesTab(props) {
             </Grid>
           ))} */}
           {messages.map((message, index) => {
-            const isMe = message.senderId === publishStreamId;
-            // console.log("isMe", message, isMe);
+            const isMe = message.senderId === publishStreamId|| message.streamId=== publishStreamId || message.name==='You';
+            console.log("isMe", message, isMe, publishStreamId);
             
             const cleanName = isMe ? "You" : message.name?.split("_")[0] ?? "";
 

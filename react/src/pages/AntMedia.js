@@ -511,6 +511,10 @@ function AntMedia(props) {
     }
     return result;
   }, []);
+  useEffect(()=>{console.log("participants:", allParticipants);
+  },[allParticipants])
+  useEffect(()=>{console.log("participants:", pagedParticipants);
+  },[pagedParticipants])
 
   // speed test related states
   const speedTestStreamId = React.useRef(makeid(20));
@@ -689,7 +693,7 @@ function AntMedia(props) {
      */
 
   function setAndFillPlayStatsList(obj) {
-    console.log("obj", obj);
+    // console.log("obj", obj);
     let tempStatsList = statsList.current;
     let tempStats = {};
 
@@ -724,7 +728,7 @@ function AntMedia(props) {
   }
 
   function setAndFillPublishStatsList(obj) {
-    console.log("obj", obj);
+    // console.log("obj", obj);
     let tempStatsList = statsList.current;
     let tempStats = {};
     tempStats.videoRoundTripTime = obj.videoRoundTripTime;
@@ -1589,6 +1593,7 @@ function AntMedia(props) {
     allParticipantsTemp["streamId_" + suffix] = broadcastObject;
 
     if (!_.isEqual(allParticipantsTemp, allParticipants)) {
+      console.log("1596 allParticipants updated");
       setAllParticipants(allParticipantsTemp);
     }
 
@@ -1625,6 +1630,7 @@ function AntMedia(props) {
     let allParticipantsTemp = { ...allParticipants };
     delete allParticipantsTemp["streamId_" + suffix];
     if (!_.isEqual(allParticipantsTemp, allParticipants)) {
+       console.log("1633 allParticipants updated");
       setAllParticipants(allParticipantsTemp);
     }
 
@@ -1667,7 +1673,8 @@ function AntMedia(props) {
 
     allParticipantsTemp[broadcastObject.streamId] = broadcastObject; //TODO: optimize
     if (!_.isEqual(allParticipantsTemp, allParticipants)) {
-      setAllParticipants(allParticipantsTemp);
+       console.log("1676 allParticipants updated");
+      // setAllParticipants(allParticipantsTemp);
       setParticipantUpdated(!participantUpdated);
     }
   }
@@ -1821,10 +1828,10 @@ function AntMedia(props) {
       setInitialized(true);
     } else if (info === "subtrackList") {
       let subtrackList = obj.subtrackList;
-      console.log("line 1824",obj)
+      // console.log("line 1824", obj);
       let subTrackArray = subtrackList.map((track) => JSON.parse(track));
       // let subTrackArray = subtrackList.map((track) => JSON.parse(track)).filter((track) => !track.zombi);
-      console.log("subtrackList:", subtrackList, subTrackArray);
+      // console.log("subtrackList:", subtrackList, subTrackArray);
       setPagedParticipants(subTrackArray);
       let allParticipantsTemp = allParticipants;
       if (!isPlayOnly && publishStreamId) {
@@ -1876,6 +1883,8 @@ function AntMedia(props) {
         }
       });
       if (!_.isEqual(allParticipantsTemp, allParticipants)) {
+        // console.log("1886 allParticipants updated");
+        
         setAllParticipants(allParticipantsTemp);
         setParticipantUpdated(!participantUpdated);
       }
@@ -1901,7 +1910,7 @@ function AntMedia(props) {
         handleSubtrackBroadcastObject(broadcastObject, false);
       }
 
-      console.log(obj.broadcast);
+      // console.log("line 1904",JSON.parse(obj.broadcast));
     } else if (info === "newTrackAvailable") {
       console.log("newTrackAvailable:", obj);
       handlePlayVideo(obj);
@@ -1914,10 +1923,9 @@ function AntMedia(props) {
         console.log("screen share added:" + obj.trackId);
         webRTCAdaptor?.getBroadcastObject(obj.trackId);
       }
-    } 
-    else if (info === "subtrackRemoved") {
+    } else if (info === "subtrackRemoved") {
       console.log("subtrack removed:", obj);
-
+// console.log("1928 allParticipants updated");
       //this is the way to syncronize the state update
       setAllParticipants((prevParticipants) => {
         let allParticipantsTemp = { ...prevParticipants };
@@ -1931,8 +1939,7 @@ function AntMedia(props) {
         console.log("currently pinned stream is removed:" + obj.trackId);
         unpinVideo(false);
       }
-    } 
-    else if (info === "publish_started") {
+    } else if (info === "publish_started") {
       setIsPublished(true);
       streamIdInUseCounter = 0;
       console.log("**** publish started:" + reconnecting);
@@ -2583,7 +2590,7 @@ function AntMedia(props) {
     setVideoTrackAssignments((prev) =>
       prev.filter((track) => track.streamId !== screenShareStreamId.current)
     );
-
+console.log("2593 allParticipants updated");
     setAllParticipants((prev) => {
       const updated = { ...prev };
       delete updated[screenShareStreamId.current];
@@ -2595,19 +2602,30 @@ function AntMedia(props) {
     setMessages((oldMessages) => {
       let lastMessage = oldMessages[oldMessages.length - 1]; //this must remain mutable
       const isSameUser = lastMessage?.name === newMessage?.name;
+        let rawDate = newMessage?.date;
+
+    if (!rawDate || isNaN(new Date(rawDate).getTime())) {
+      // If date is missing or invalid, set current date/time
+      rawDate = new Date().toString();
+    }
       const sentInSameTime = lastMessage?.date === newMessage?.date;
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      newMessage.date = new Date(newMessage?.date).toLocaleString(getLang(), {
+      newMessage.date = new Date(rawDate).toLocaleString(getLang(), {
         timeZone: timezone,
         hour: "2-digit",
         minute: "2-digit",
       });
+      // console.log("line 2603",newMessage.date)
       calculate_scroll_height();
-      if (isSameUser && sentInSameTime) {
+      let check = false
+      if (isSameUser && sentInSameTime && check) {
+        console.log("isSameUser and Time");
+        
         //group the messages *sent back to back in the same timeframe by the same user* by joinig the new message text with new line
         lastMessage.message = lastMessage.message + "\n" + newMessage.message;
         return [...oldMessages]; // don't make this "return oldMessages;" this is to trigger the useEffect for scroll bottom and get over showing the last prev state do
       } else {
+         console.log("isSameUser and Time false");
         return [...oldMessages, newMessage];
       }
     });
@@ -2749,7 +2767,12 @@ function AntMedia(props) {
     console.log("handleSend file triggered", file);
     const fileName = file.fileName;
     const serverFilePath = file.serverFilePath;
-    console.log("line 2745", fileName);
+    const fileSize = file.fileSize;
+    // console.log("line 2751",fileSize);
+    const fileType = file.fileType;
+  const date = new Date().toISOString(); 
+  
+    // console.log("line 2745", fileName);
     try {
       if (publishStreamId || isPlayOnly) {
         let streamId = isPlayOnly ? roomName : publishStreamId;
@@ -2760,20 +2783,36 @@ function AntMedia(props) {
           iceState !== "failed" &&
           iceState !== "disconnected"
         ) {
-          webRTCAdaptor?.sendData(
-            streamId,
-            JSON.stringify({
-              eventType: "FILE_MESSAGE",
-              fileName: fileName,
-              serverFilePath: serverFilePath,
-              name: streamName,
-              senderId: streamId,
-              date: new Date().toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              }),
-            })
-          );
+          // webRTCAdaptor?.sendData(
+          //   streamId,
+          //   JSON.stringify({
+          //     eventType: "FILE_MESSAGE",
+          //     fileName: fileName,
+          //     serverFilePath: serverFilePath,
+          //     fileSize: fileSize,
+          //     name: streamName,
+          //     senderId: streamId,
+          //     date: new Date().toLocaleTimeString([], {
+          //       hour: "2-digit",
+          //       minute: "2-digit",
+          //     }),
+          //   })
+          // );
+           const messageObj = {
+          eventType: "FILE_MESSAGE",
+          fileName,
+          serverFilePath,
+          fileSize,
+          fileType,
+          name: streamName,
+          senderId: streamId,
+          date,
+           }
+            webRTCAdaptor?.sendData(streamId, JSON.stringify(messageObj));
+            handleNotificationEvent({
+          streamId: streamId,
+          data: JSON.stringify(messageObj),
+        });
         } else {
           console.error("WebRTC connection is not stable:", iceState);
         }
@@ -2787,11 +2826,12 @@ function AntMedia(props) {
 
   async function handleFileUpload(files) {
     // console.log("line 2225", files);
-
+    if (!files || files.length === 0) return;
     const file = files[0];
 
     if (!file) return;
     console.log("file", file);
+    console.log("file.size value:", file.size); 
 
     // Allowed MIME types for PDF, Word, and Excel files.
     // const allowedTypes = [
@@ -2837,14 +2877,14 @@ function AntMedia(props) {
         const fileMessage = {
           eventType: "FILE_MESSAGE",
           fileName: file.name,
-          fileType: file.type,
           fileSize: file.size,
+          fileType: file.type,
           serverFilePath: fileResponse.file,
           senderId: isPlayOnly ? roomName : publishStreamId,
           name: streamName,
           date: new Date().toString(),
         };
-
+        
         const streamId = isPlayOnly ? roomName : publishStreamId;
         console.log("webRTC adapter called", streamId, fileMessage);
 
@@ -2910,6 +2950,7 @@ function AntMedia(props) {
   React.useEffect(() => {
     // we need to empty participant array. if we are going to leave it in the first place.
     setVideoTrackAssignments([]);
+    console.log("2949 allParticipants updated");
     setAllParticipants({});
 
     clearInterval(audioListenerIntervalJob);
@@ -2940,10 +2981,12 @@ function AntMedia(props) {
 
   function handleNotificationEvent(obj) {
     var notificationEvent = JSON.parse(obj.data);
+    
     // console.log("handleNotificationEvent:", notificationEvent);
     if (notificationEvent != null && typeof notificationEvent == "object") {
       var eventStreamId = notificationEvent.streamId;
       var eventType = notificationEvent.eventType;
+
 
       if (
         eventType === "CAM_TURNED_OFF" ||
@@ -2954,8 +2997,11 @@ function AntMedia(props) {
         webRTCAdaptor?.getBroadcastObject(eventStreamId);
         if (eventType === "CAM_TURNED_OFF") {
           updateUserStatusMetadata(null, false, eventStreamId);
+          
+          console.log("Camera is turned off")
         } else if (eventType === "CAM_TURNED_ON") {
           updateUserStatusMetadata(null, true, eventStreamId);
+          console.log("Camera is turned on")
         } else if (eventType === "MIC_MUTED") {
           updateUserStatusMetadata(true, null, eventStreamId);
         } else if (eventType === "MIC_UNMUTED") {
@@ -2977,7 +3023,8 @@ function AntMedia(props) {
       ) {
         setIsBroadcasting(false);
         console.log("BROADCAST_OFF");
-      } else if (eventType === "MESSAGE_RECEIVED") {
+      } 
+      else if (eventType === "MESSAGE_RECEIVED") {
         // if message arrives from myself or footer message button is disabled then we are not going to show it.
         if (
           notificationEvent.senderId === publishStreamId ||
@@ -2989,6 +3036,8 @@ function AntMedia(props) {
 
         calculate_scroll_height();
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        console.log("date from line 3039", notificationEvent.date);
+
         notificationEvent.date = new Date(
           notificationEvent?.date
         ).toLocaleString(getLang(), {
@@ -3065,7 +3114,8 @@ function AntMedia(props) {
             return [...oldMessages, notificationEvent];
           }
         });
-      } else if (eventType === "FILE_MESSAGE") {
+      } 
+      else if (eventType === "FILE_MESSAGE") {
         // console.log("file message line 3039",notificationEvent)
         // if message arrives from myself or footer message button is disabled then we are not going to show it.
         if (
@@ -3078,6 +3128,8 @@ function AntMedia(props) {
 
         calculate_scroll_height();
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        console.log("notification date", notificationEvent.date);
+        
         notificationEvent.date = new Date(
           notificationEvent?.date
         ).toLocaleString(getLang(), {
@@ -3127,28 +3179,28 @@ function AntMedia(props) {
         //     return [...oldMessages, notificationEvent];
         //   }
         // });
-             setMessages((oldMessages) => {
-  const lastMessage = oldMessages[oldMessages.length - 1];
-  const isSameUser = lastMessage?.name === notificationEvent?.name;
-  const sentInSameTime = lastMessage?.date === notificationEvent?.date;
+        
+        
+        setMessages((oldMessages) => {
+          const lastMessage = oldMessages[oldMessages.length - 1];
+          const isSameUser = lastMessage?.name === notificationEvent?.name;
+          const sentInSameTime = lastMessage?.date === notificationEvent?.date;
 
-  // Only group if it's a TEXT message from the same user and time
-  if (
-    isSameUser &&
-    sentInSameTime &&
-    lastMessage?.eventType === "FILE_MESSAGE"
-  ) {
-    // Optional: Do not group file messages; it's safer and avoids bugs.
-    return [...oldMessages, notificationEvent];
-  } else {
-    return [...oldMessages, notificationEvent];
-  }
-});
-
-
-     
-     
-      } else if (eventType === "SCREEN_SHARING_ON") {
+          // Only group if it's a TEXT message from the same user and time
+          if (
+            isSameUser &&
+            sentInSameTime &&
+            lastMessage?.eventType === "FILE_MESSAGE"
+          ) {
+            console.log("line 3187",notificationEvent)
+            // Optional: Do not group file messages; it's safer and avoids bugs.
+            return [...oldMessages,notificationEvent]
+          } else {
+            return [...oldMessages, notificationEvent];
+          }
+        });
+      } 
+      else if (eventType === "SCREEN_SHARING_ON") {
         console.log("line 3090", obj);
         pinVideo(eventStreamId);
       } else if (eventType === "SCREEN_SHARING_OFF") {
@@ -3245,6 +3297,7 @@ function AntMedia(props) {
         });
 
         if (!_.isEqual(allParticipants, tempAllParticipants)) {
+          console.log("3288 allParticipants updated");
           setAllParticipants(tempAllParticipants);
         }
 
@@ -3381,6 +3434,8 @@ function AntMedia(props) {
         }
       }
     }
+    
+    
   }
 
   const updateTalkers = (notificationEvent) => {
@@ -3528,7 +3583,9 @@ function AntMedia(props) {
       isScreenShared: false, // you might want to keep this dynamic as well
       playOnly: isPlayOnly,
       role: role,
+
     };
+    console.log("Metadata",metadata,streamId)
 
     return metadata;
   }
@@ -3548,7 +3605,15 @@ function AntMedia(props) {
 
   function updateUserStatusMetadata(micMuted, cameraOn, streamId) {
     let metadata = getUserStatusMetadata(micMuted, cameraOn, false, streamId);
+    const currentParticipant = allParticipants[streamId];
+    if(currentParticipant){
+         currentParticipant.metaData = JSON.stringify(metadata);
+    currentParticipant.parsedMetaData = metadata;
 
+    console.log("currentParticipant:",metadata, currentParticipant);
+    // console.log("3600 allParticipants updated");
+    setAllParticipants((prev)=>({...prev, streamId:currentParticipant}))
+    }
     webRTCAdaptor?.updateStreamMetaData(streamId, JSON.stringify(metadata));
   }
 
@@ -3686,6 +3751,7 @@ function AntMedia(props) {
       //   "removeAllRemoteParticipants setAllParticipants:" +
       //     JSON.stringify(allParticipantsTemp)
       // );
+      console.log("3740 allParticipants updated");
       setAllParticipants(allParticipantsTemp);
     }
     setParticipantUpdated(!participantUpdated);
@@ -3727,6 +3793,7 @@ function AntMedia(props) {
       //   "addMeAsParticipant setAllParticipants:" +
       //     JSON.stringify(allParticipantsTemp)
       // );
+      console.log("3782 allParticipants updated");
       setAllParticipants(allParticipantsTemp);
       setParticipantUpdated(!participantUpdated);
     }
@@ -3948,7 +4015,7 @@ function AntMedia(props) {
       webRTCAdaptor?.turnOnLocalCamera(publishStreamId);
     }
 
-    updateUserStatusMetadata(isMyMicMuted, true);
+    updateUserStatusMetadata(isMyMicMuted, true, publishStreamId);
     setIsMyCamTurnedOff(false);
 
     handleSendNotificationEvent("CAM_TURNED_ON", publishStreamId);
@@ -3961,7 +4028,7 @@ function AntMedia(props) {
       webRTCAdaptor?.turnOffLocalCamera(publishStreamId);
     }
 
-    updateUserStatusMetadata(isMyMicMuted, false);
+    updateUserStatusMetadata(isMyMicMuted, false, publishStreamId);
     setIsMyCamTurnedOff(true);
 
     handleSendNotificationEvent("CAM_TURNED_OFF", publishStreamId);
@@ -4090,21 +4157,47 @@ function AntMedia(props) {
     }
   };
 
-  function muteLocalMic() {
-    webRTCAdaptor?.muteLocalMic();
-    updateUserStatusMetadata(true, !isMyCamTurnedOff);
-    setIsMyMicMuted(true);
+  // function muteLocalMic() {
+  //   webRTCAdaptor?.muteLocalMic();
+  //   updateUserStatusMetadata(true, !isMyCamTurnedOff);
+  //   setIsMyMicMuted(true);
 
+  //   handleSendNotificationEvent("MIC_MUTED", publishStreamId);
+  // }
+
+  function muteLocalMic() {
+  try {
+    webRTCAdaptor?.muteLocalMic();
+    setIsMyMicMuted(true);
+    updateUserStatusMetadata(true, !isMyCamTurnedOff, publishStreamId);
     handleSendNotificationEvent("MIC_MUTED", publishStreamId);
+    console.info(`Microphone muted for stream ${publishStreamId}`);
+  } catch (error) {
+    console.error(`Failed to mute microphone:`, error);
+    setIsMyMicMuted(false); // Revert state on failure
   }
+}
+
+  // function unmuteLocalMic() {
+  //   webRTCAdaptor?.unmuteLocalMic();
+  //   updateUserStatusMetadata(false, !isMyCamTurnedOff);
+  //   setIsMyMicMuted(false);
+
+  //   handleSendNotificationEvent("MIC_UNMUTED", publishStreamId);
+  // }
 
   function unmuteLocalMic() {
+  try {
     webRTCAdaptor?.unmuteLocalMic();
-    updateUserStatusMetadata(false, !isMyCamTurnedOff);
     setIsMyMicMuted(false);
-
+    updateUserStatusMetadata(false, !isMyCamTurnedOff, publishStreamId);
     handleSendNotificationEvent("MIC_UNMUTED", publishStreamId);
+    console.info(`Microphone unmuted for stream ${publishStreamId}`);
+  } catch (error) {
+    console.error(`Failed to unmute microphone:`, error);
+    setIsMyMicMuted(true); // Revert state on failure
   }
+}
 
   const setAudioLevelListener = (listener, period) => {
     if (audioListenerIntervalJob == null) {
@@ -4613,6 +4706,7 @@ function AntMedia(props) {
               publishStreamId={publishStreamId}
               role={role}
               checkVideoTrackHealth={checkVideoTrackHealth}
+              onCancel={() => {setIsAuthenticated(false);}}
             />
           ) : (
             <>
@@ -4727,6 +4821,7 @@ function AntMedia(props) {
               />
               <MessageDrawer
                 messages={messages}
+                publishStreamId={publishStreamId}
                 sendMessage={(message) => handleSendMessage(message)}
                 sendFile={(file) => handleSendFile(file)}
                 uploadFile={(file) => handleFileUpload(file)}

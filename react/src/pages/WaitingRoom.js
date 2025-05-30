@@ -90,6 +90,9 @@ function WaitingRoom(props) {
   const [openPrivacy, setOpenPrivacy] = useState(false);
   const [activeLink, setActiveLink] = useState("");
 
+  const isNameValid = (name) => {
+    return name && name.trim().length > 0;
+  };
   const { enqueueSnackbar } = useSnackbar();
 
   const handleOpenTerms = () => {
@@ -126,6 +129,20 @@ function WaitingRoom(props) {
   }, [props?.initialized]);
 
   function joinRoom(e) {
+    if (!isNameValid(props?.streamName)) {
+      enqueueSnackbar(
+        {
+          message: t("Please enter a valid name"),
+          variant: "error",
+          icon: <SvgIcon size={24} name={"muted-camera"} color="#fff" />,
+        },
+        {
+          autoHideDuration: 1500,
+        }
+      );
+      return;
+    }
+
     let isVideoTrackHealthy = props?.checkVideoTrackHealth();
     if (!agreed) {
       enqueueSnackbar(
@@ -633,6 +650,12 @@ function WaitingRoom(props) {
                       value={props?.streamName ?? ""}
                       variant="outlined"
                       placeholder={t("Your name")}
+                      onChange={(e) =>
+                        props?.setStreamName(e.target.value.trimStart())
+                      } // Trim leading spaces
+                      onBlur={(e) =>
+                        props?.setStreamName(e.target.value.trim())
+                      }
                       readOnly={true}
                       id="participant_name"
                       sx={{
@@ -779,11 +802,11 @@ function WaitingRoom(props) {
                       type="submit"
                       id="room_join_button"
                       data-testid="join-room-button"
-                      disabled={
-                        props?.streamName?.length < 1 ||
-                        props?.streamName?.length < undefined ||
-                        !agreed
-                      }
+                      // disabled={
+                      //   props?.streamName?.length < 1 ||
+                      //   props?.streamName?.length < undefined ||
+                      //   !agreed
+                      disabled={!isNameValid(props?.streamName) || !agreed}
                       sx={{
                         backgroundColor:
                           props?.streamName && agreed ? "#04141f" : "#7d7d7d",

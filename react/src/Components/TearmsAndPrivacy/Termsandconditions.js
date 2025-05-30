@@ -65,6 +65,8 @@ export const Termsandconditions = ({ open, onClose }) => {
               xs: "-15px", // No negative margin on mobile to prevent it from going off-screen
               sm: "-15px", // Original margin for larger screens
             },
+            padding: "0rem 1rem",
+            height: "fit-content",
           }}
         >
           <AiOutlineClose onClick={onClose} className="custom-close-icon" />
